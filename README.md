@@ -4,7 +4,7 @@ This repository contains CHAFS files intended for deployment on the CHC-ROI serv
 
 Current architecture:
 
-<img src="https://github.com/chc-ucsb/chafs-roi/blob/main/figures/architecture.png?raw=true" alt="drawing" width="500"/>
+<img src="https://github.com/chc-ucsb/chafs-roi/blob/main/figures/architecture.png?raw=true" alt="drawing" width="800"/>
 
 Operational crop yield forecasts are publicly available at [https://data.chc.ucsb.edu/people/dlee/viewer/figures/](https://data.chc.ucsb.edu/people/dlee/viewer/figures/).</br>
 
