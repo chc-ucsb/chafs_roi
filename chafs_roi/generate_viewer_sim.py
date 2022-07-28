@@ -7,7 +7,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-from chafs_tools import CHAFS_Aggregate_CPSM
+from .chafs_tools import CHAFS_Aggregate_CPSM
 
 def month_date(year, forecast_end, lead):
     # No year (scores)
@@ -18,7 +18,7 @@ def month_date(year, forecast_end, lead):
     ld = pd.DateOffset(months=lead)
     return fe-ld
 
-def main():
+def generate_viewer_sim():
     # Export a specific cpsme to "viewer_data_sim.csv" - # 
     cpsme_list = [
         ['Somalia','Maize','Gu','XGB','YFT_ACUM_ALL'],
@@ -268,7 +268,4 @@ def main():
     print(df['variable'].unique())
     # -------------------------------------------------- #
     
-    
-    
-if __name__ == "__main__":
-    main()
+    return

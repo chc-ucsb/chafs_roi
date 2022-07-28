@@ -20,7 +20,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, GradientBoostingRegressor
 from sklearn.metrics import make_scorer, mean_absolute_percentage_error, mean_squared_error, r2_score, roc_curve, auc, mean_absolute_error
-import metrics as mt
+from . import metrics as mt
 from boruta import BorutaPy
 import xgboost as xgb
 from xgboost import XGBRegressor

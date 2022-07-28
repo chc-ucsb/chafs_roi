@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from netCDF4 import num2date, Dataset
 import xarray as xr
 import rioxarray
-from tools import RasterResampling, RasterizeAdminIndex, save_hdf
+from ..tools import RasterResampling, RasterizeAdminIndex, save_hdf
 import rasterio
 import dask
 dask.config.set({"array.slicing.split_large_chunks": False})
@@ -104,7 +104,7 @@ def ExtractAdmTMAX_noaa(year, fnid_dict):
     return
 
 
-if __name__ == '__main__':
+def tmax_noaa_cpc():
     # Load both admin1 and admin2 boundaries
     adm1 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm1_glob.shp')
     adm2 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm2_glob.shp')
@@ -147,3 +147,5 @@ if __name__ == '__main__':
         pool.close()
         pool.join()
     print(time.time() - stime)
+
+    return

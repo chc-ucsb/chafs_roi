@@ -7,13 +7,12 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-from chafs_tools import CHAFS_Aggregate_CPSM
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import json
-from tools import month2lead
-from chafs_graphic import PlotForecastMap, PlotScoreHeatmap, PlotScoreMap, PlotImportanceHeatmap, PlotImportanceMap
+from .tools import month2lead
+from .chafs_graphic import PlotForecastMap, PlotScoreHeatmap, PlotScoreMap, PlotImportanceHeatmap, PlotImportanceMap
 import subprocess
 import shlex
 
@@ -27,7 +26,7 @@ def run_command(command):
     return
 
 
-def main():
+def generate_graphics():
     
     # Load FEWSNET admin boundaries
     shape = gpd.read_file('./data/shapefile/gscd_shape_stable.shp')
@@ -83,7 +82,7 @@ def main():
             (df['model'] == model_name)
         ]
         # Adjust year (same year for the same harvest_end)
-        sim['lead'] = sim['month'].apply(lambda x: month2lead(cps,x))
+        sim['lead'] = sim['month'].apply(lambda x: month2lead(cps,x)).values
         sim['year_adj'] = sim['year']
         sim.loc[sim['month'] + sim['lead'] > 12, 'year_adj'] += 1
 
@@ -197,6 +196,4 @@ def main():
     run_command(command)
     print('='*50)
 
-    
-if __name__ == "__main__":
-    main()
+    returen

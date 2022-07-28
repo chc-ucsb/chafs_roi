@@ -16,7 +16,7 @@ import rasterio
 from rasterio.merge import merge
 from rasterio.warp import reproject, Resampling
 import rioxarray
-from tools import DownloadFromURL, LinkFromURL, LinkFromFTP
+from ..tools import DownloadFromURL, LinkFromURL, LinkFromFTP
 import warnings
 from datetime import date
 from dateutil.relativedelta import relativedelta
@@ -30,7 +30,7 @@ def run_command(command):
         print(line.rstrip())
     return
 
-if __name__ == '__main__':
+def stream_eodata():
     # NDVI-eMODIS =====================================
     # a) Mirror 2020-current GeoTiff files from USGS http server to "ndvi_emodis_mirror"
     command = 'wget -m -nd --reject="data_202???01_202???28.tiff, data_202???01_202???29.tiff, data_202???01_202???30.tiff, data_202???01_202???31.tiff" -A "data_202?*.tiff" https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/fews/viewer_G5/emodisndvic6v2_africa_dekad_data -P /home/chc-sandbox/people/dlee/ndvi_emodis_mirror/ -q --show-progress'
@@ -209,3 +209,5 @@ if __name__ == '__main__':
         shutil.copyfile(fn_src, fn_dst)
         print('%s is saved.' % fn_dst)
     # =================================================
+    
+    return

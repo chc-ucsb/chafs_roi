@@ -1,4 +1,4 @@
-name: chafs-roi
+name: chafs_roi
 channels:
   - conda-forge
   - defaults

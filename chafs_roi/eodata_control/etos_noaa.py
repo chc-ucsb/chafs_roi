@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from netCDF4 import num2date, Dataset
 import xarray as xr
 import rioxarray
-from tools import RasterResampling, RasterizeAdminIndex, save_hdf
+from ..tools import RasterResampling, RasterizeAdminIndex, save_hdf
 import rasterio
 import dask
 dask.config.set({"array.slicing.split_large_chunks": False})
@@ -19,24 +19,24 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
-def ExtractAdmPRCP_chirps_prelim(year, fnid_dict):
+def ExtractAdmETOS_noaa(year, fnid_dict):
     # Get filenames
-    fn_data = '/home/chc-data-out/products/CHIRPS-2.0/prelim/global_daily/netcdf/p05/chirps-v2.0.{:04d}.days_p05.nc'
+    fn_data = '/home/chc-sandbox/people/dlee/etos_noaa/ETos_fine_{:04d}????.nc'
     infile = sorted(glob.glob(fn_data.format(year)))
     if len(infile) == 0: return
 
     # Get datetimeindex
-    data = xr.open_mfdataset(infile, combine='by_coords', parallel=True)
-    date = pd.to_datetime(data.variables['time'].values)
+    date = pd.to_datetime([os.path.split(filn)[1][-11:-3] for filn in infile])
 
     # Remove existing files
-    filn_out_crop = '/home/dlee/chafs/data/eodata/prcp_chirps-v2p/adm.prcp.chirps-v2p.crop.{:04d}.{:02d}.{:02d}.hdf'
-    filn_out_all = '/home/dlee/chafs/data/eodata/prcp_chirps-v2p/adm.prcp.chirps-v2p.all.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_crop = '/home/dlee/chafs/data/eodata/etos_noaa/adm.etos.noaa.crop.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_all = '/home/dlee/chafs/data/eodata/etos_noaa/adm.etos.noaa.all.{:04d}.{:02d}.{:02d}.hdf'
     fn_out_crop = [filn_out_crop.format(dt.year, dt.month, dt.day) for dt in date]
     fn_out_all = [filn_out_all.format(dt.year, dt.month, dt.day) for dt in date]
     date_retain_crop = [not os.path.exists(filn) for filn in fn_out_crop]
     date_retain_all = [not os.path.exists(filn) for filn in fn_out_all]
     date_retain = list(np.array(date_retain_crop) | np.array(date_retain_all))
+    infile = list(compress(infile, date_retain))
     date = date[date_retain]
     fn_out_crop = list(compress(fn_out_crop, date_retain))
     fn_out_all = list(compress(fn_out_all, date_retain))
@@ -44,19 +44,18 @@ def ExtractAdmPRCP_chirps_prelim(year, fnid_dict):
 
     # Resample cropland data
     fn_cropland = '/home/dlee/chafs/data/cropland/Hybrid_10042015v9.img'
-    fn_sample = '/home/chc-data-out/products/CHIRPS-2.0/global_daily/netcdf/p05/chirps-v2.0.1981.days_p05.nc'
+    fn_sample ='/home/chc-sandbox/people/dlee/etos_noaa/ETos_fine_19800101.nc'
     cropland = RasterResampling(fn_cropland, fn_sample).flatten()
 
     # Load the reduced raster indicies
-    with open('/home/dlee/chafs/data/eodata/rdx.adm.prcp.chirps-v2.pickle', 'rb') as f:
+    with open('/home/dlee/chafs/data/eodata/rdx.adm.etos.noaa.pickle', 'rb') as f:
         rdx_reduced = cPickle.load(f)
 
     # Load data from NetCDF files
     data = xr.open_mfdataset(infile, combine='by_coords', parallel=True)
-    data = data.loc[dict(time = date)]
-    nlat, nlon, ntim = data.dims['latitude'], data.dims['longitude'], data.dims['time']
+    nlat, nlon, ntim = data.dims['lat'], data.dims['lon'], data.dims['time']
     tim = data.time.values
-    data = data.variables['precip'].values
+    data = data.variables['ETos'].values
     data = data.reshape([ntim,nlat*nlon])
 
     # Aggregate to administrative units
@@ -99,13 +98,10 @@ def ExtractAdmPRCP_chirps_prelim(year, fnid_dict):
     for i, t in enumerate(tim):
         save_hdf(fn_out_crop[i], data_adm_crop.loc[t], set_print=True)
         save_hdf(fn_out_all[i], data_adm_all.loc[t], set_print=True)
-        
-    print('%d is finished..' % year)
 
     return
 
-
-if __name__ == '__main__':
+def etos_noaa():
     # Load both admin1 and admin2 boundaries
     adm1 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm1_glob.shp')
     adm2 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm2_glob.shp')
@@ -122,11 +118,11 @@ if __name__ == '__main__':
     fnid_dict = shape_adm[['ID','FNID']].set_index('ID').to_dict()['FNID']
 
     # Rasterize administrative boudaries
-    fn_rdx_out = '/home/dlee/chafs/data/eodata/rdx.adm.prcp.chirps-v2.pickle'
+    fn_rdx_out = '/home/dlee/chafs/data/eodata/rdx.adm.etos.noaa.pickle'
     if False:
-        fn_sample = '/home/chc-data-out/products/CHIRPS-2.0/global_daily/netcdf/p05/chirps-v2.0.1981.days_p05.nc'
+        fn_sample ='/home/chc-sandbox/people/dlee/etos_noaa/ETos_fine_19800101.nc'
         data_sample = xr.open_dataset(fn_sample)
-        rdx_reduced = RasterizeAdminIndex(shape_adm, 'ID', data_sample['precip'])
+        rdx_reduced = RasterizeAdminIndex(shape_adm, 'ID', data_sample['ETos'])
         assert len([k for k,v in rdx_reduced.items() if len(v) == 0]) == 0
         with open(fn_rdx_out, 'wb') as f:
             cPickle.dump(rdx_reduced, f, protocol=-1)
@@ -134,11 +130,20 @@ if __name__ == '__main__':
     # with open(fn_rdx_out, 'rb') as f:
     #     rdx_reduced = cPickle.load(f)
 
+
+    # Remove and Re-extract recent data
+    files_rm = sorted(glob.glob('/home/dlee/chafs/data/eodata/etos_noaa/adm.etos.noaa.crop.????.??.??.hdf'))[-45:]
+    if len(files_rm) > 0: 
+        for file in files_rm: 
+            os.remove(file)
+            
     # Running
     stime = time.time()
-    args = ((year, fnid_dict) for year in np.arange(2020, 2023))
+    args = ((year, fnid_dict) for year in np.arange(1981, 2023))
     with Pool(processes=8) as pool:
-        pool.starmap(ExtractAdmPRCP_chirps_prelim, args)
+        pool.starmap(ExtractAdmETOS_noaa, args)
         pool.close()
         pool.join()
     print(time.time() - stime)
+
+    return

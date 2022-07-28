@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 from sklearn.linear_model import LinearRegression
-from ccfs_time_reforecast import _Detrend, CombSerialLead, GenerateSeriesLeadPredTable
-from ccfs_time_reforecast import Reforecast_by_FNID
+from .ccfs_time_reforecast import _Detrend, CombSerialLead, GenerateSeriesLeadPredTable
+from .ccfs_time_reforecast import Reforecast_by_FNID
 import multiprocessing as mp
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -15,9 +15,7 @@ def FindLatestDeakad(feature_sel):
     return np.array([int(ft[-2:]) for ft in feature_sel]).min()
 
 
-def main():
-    
-    
+def generate_viewer_com():
     
     # Load FNID information ---------------------------- #
     fnids_info = pd.read_hdf('./data_in/fnids_info.hdf')
@@ -27,9 +25,9 @@ def main():
     fnids_dict = fnids_info.groupby('country_iso')['fnid'].apply(lambda x: x.unique().tolist()).to_dict()
     # -------------------------------------------------- #
     
-    # (1) Reforecast all years ------------------------- #
-    # In order to run multiprocessing codes on Ipython, we need to make a function of main work
-    # (Source: https://medium.com/@grvsinghal/speed-up-your-python-code-using-multiprocessing-on-windows-and-jupyter-or-ipython-2714b49d6fac)
+#     # (1) Reforecast all years ------------------------- #
+#     # In order to run multiprocessing codes on Ipython, we need to make a function of main work
+#     # (Source: https://medium.com/@grvsinghal/speed-up-your-python-code-using-multiprocessing-on-windows-and-jupyter-or-ipython-2714b49d6fac)
     list_model = ['ET']
     cps = [
         ['Somalia','Sorghum','Deyr'],
@@ -40,7 +38,7 @@ def main():
         ['Kenya','Maize','Long'],
         ['Kenya','Maize','Short'],
         ['Burkina Faso','Maize','Main'],
-#         ['Burkina Faso','Sorghum','Main']
+        ['Burkina Faso','Sorghum','Main']
     ]
     comb = product(cps, list_model)
     stime = time.time()
@@ -544,6 +542,4 @@ def main():
     # df[['out-of-sample','variable']].drop_duplicates()
     # -------------------------------------------------- #
     
-    
-if __name__ == "__main__":
-    main()
+    return

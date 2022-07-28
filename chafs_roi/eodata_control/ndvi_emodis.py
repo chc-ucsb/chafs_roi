@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from netCDF4 import num2date, Dataset
 import xarray as xr
 import rioxarray
-from tools import RasterResampling_tif, RasterizeAdminShape_tif, save_hdf
+from ..tools import RasterResampling_tif, RasterizeAdminShape_tif, save_hdf
 import rasterio
 import dask
 dask.config.set({"array.slicing.split_large_chunks": False})
@@ -122,7 +122,7 @@ def ExtractAdmNDVI_emodis(year, fnid_dict):
     return
 
 
-if __name__ == '__main__':
+def ndvi_emodis():
     # Load both admin1 and admin2 boundaries
     adm1 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm1_glob.shp')
     adm2 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm2_glob.shp')
@@ -203,3 +203,5 @@ if __name__ == '__main__':
         pool.close()
         pool.join()
     print(time.time() - stime)
+
+    return

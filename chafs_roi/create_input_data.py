@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import xarray as xr
-from tools import split, save_hdf
+from .tools import split, save_hdf
 import scipy
 import scipy.signal
 from scipy.stats import zscore
@@ -138,7 +138,7 @@ def LongTermDaily(df, years, method='mean'):
     return df_long
 
     
-def main():
+def create_input_data():
     
     path_chafs = '/home/dlee/chafs'
 
@@ -215,9 +215,9 @@ def main():
     '''
     Previously, we "updated" the aggregated file with newly added daily files, but we downgraded it to aggregate all files everytime.
     '''
-#     # Merge & Update the latest admin-level aggregated data 
-#     for name in ['etos', 'tmax', 'tmin', 'gdd', 'prcp_chrips', 'prcp_chrips_prelim', 'ndvi_emodis']:
-#         MergeUpdateData(name)
+    # Merge & Update the latest admin-level aggregated data 
+    for name in ['etos', 'tmax', 'tmin', 'gdd', 'prcp_chrips', 'prcp_chrips_prelim', 'ndvi_emodis']:
+        MergeUpdateData(name)
     # ---------------------------------------- #
 
 
@@ -533,9 +533,7 @@ def main():
     print('Exporting EO data is completed.')
     # ---------------------------------------- #
     
-    
-if __name__ == "__main__":
-    main()
+    return
     
     
     
