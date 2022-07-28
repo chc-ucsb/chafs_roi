@@ -1,6 +1,10 @@
 # CHC Agricultural Forecast System (CHAFS) - ROI
 
-This repository contains CHAFS system files intended for deployment on the CHC-ROI server.</br>
+This repository contains CHAFS files intended for deployment on the CHC-ROI server.</br>
+
+Current architecture
+<img src="https://github.com/chc-ucsb/chafs-roi/blob/main/figures/architecture.png?raw=true" alt="drawing" width="600"/>
+
 Operational crop yield forecasts are publicly available at [https://data.chc.ucsb.edu/people/dlee/viewer/figures/](https://data.chc.ucsb.edu/people/dlee/viewer/figures/).</br>
 
 More details will be provided soon!
