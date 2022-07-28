@@ -1,6 +1,6 @@
 # CHC Agricultural Forecast System (CHAFS) - ROI
 
-This repository contains CHAFS files intended for deployment on the CHC-ROI server.</br>
+This repository maintains CHAFS deployment files for the CHC-ROI server.</br>
 
 Current architecture:
 
