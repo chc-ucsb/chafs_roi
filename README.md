@@ -6,7 +6,7 @@ Current architecture:
 
 <img src="https://github.com/chc-ucsb/chafs-roi/blob/main/figures/architecture.png?raw=true" alt="drawing" width="800"/>
 
-Operational crop yield forecasts are publicly available at [https://data.chc.ucsb.edu/people/dlee/viewer/figures/](https://data.chc.ucsb.edu/people/dlee/viewer/).</br>
+Operational crop yield forecasts are publicly available at [https://data.chc.ucsb.edu/people/dlee/viewer/](https://data.chc.ucsb.edu/people/dlee/viewer/).</br>
 
 More details will be provided soon!
 
