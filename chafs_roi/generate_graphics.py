@@ -196,4 +196,4 @@ def generate_graphics():
     run_command(command)
     print('='*50)
 
-    returen
+    return
