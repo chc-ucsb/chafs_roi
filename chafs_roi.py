@@ -15,8 +15,20 @@ from chafs_roi.generate_graphics import generate_graphics
 def main(): 
     stime = time.time()
     
-    # Earth Observation Data Control
+    # Earth Observation (EO) Data Control
+    # 1) NDVI_eMODIS is
+    # retrieved from https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/fews/viewer_G5/emodisndvic6v2_africa_dekad_data
+    # stored at /home/chc-sandbox/people/dlee/ndvi_emodis_mirror/
+    # mirrored to /home/chc-sandbox/people/dlee/ndvi_emodis/
+    # 2) Temperature Max and Min (Growing Degree Day is calculated from Tmax and Tmin)
+    # retrieved from ftp://ftp.cdc.noaa.gov/Datasets/cpc_global_temp/
+    # stored at /home/chc-sandbox/people/dlee/temp_noaa-cpc/
+    # 3) Reference ET is
+    # retrieved from ftp://ftp.cdc.noaa.gov/Projects/RefET/global/Gen-0/fine_resolution/data_v2/
+    # stored at /home/chc-sandbox/people/dlee/etos_noaa/
     stream_eodata()         # Retrieve the latest data into ROI
+
+    # 
     etos_noaa()             # Spatial means of ETo
     tmax_noaa_cpc()         # Spatial means of Tmax
     tmin_noaa_cpc()         # Spatial means of Tmax
@@ -43,3 +55,5 @@ def main():
 
 if __name__ == '__main__': 
     main()
+
+
