@@ -61,8 +61,19 @@ def generate_graphics():
         cpsm_string = '%s-%s-%s-%s' % (country_name, product_name, season_name, model_name)
         cps = (country_name, product_name, season_name)
         cps_string = '%s-%s-%s' % (cps)
+        cps_string = cps_string.replace(' ', '-')
         if not os.path.exists('./viewer/figures/'+cps_string):
             os.mkdir('./viewer/figures/'+cps_string)
+            os.mkdir('./viewer/figures/'+cps_string+'/ET')
+            os.mkdir('./viewer/figures/'+cps_string+'/ET/feature_importance')
+            os.mkdir('./viewer/figures/'+cps_string+'/ET/forecast')
+            os.mkdir('./viewer/figures/'+cps_string+'/ET/hindcast')
+            os.mkdir('./viewer/figures/'+cps_string+'/ET/skill_scores')
+            os.mkdir('./viewer/figures/'+cps_string+'/GB')
+            os.mkdir('./viewer/figures/'+cps_string+'/GB/feature_importance')
+            os.mkdir('./viewer/figures/'+cps_string+'/GB/forecast')
+            os.mkdir('./viewer/figures/'+cps_string+'/GB/hindcast')
+            os.mkdir('./viewer/figures/'+cps_string+'/GB/skill_scores')
 
         # Observed data
         obs = df[
@@ -96,13 +107,13 @@ def generate_graphics():
         lead_month['monthL'] = lead_month['month'].apply(lambda x: pd.to_datetime('2000-%02d-01' % x).strftime('%b'))
         months = lead_month['monthL']
         # Score Heatmap
-        fn_out = './viewer/figures/%s/score_heatmap_%s' % (cps_string, model_name)
+        fn_out = './viewer/figures/%s/%s/skill_scores/score_heatmap_%s' % (cps_string, model_name, model_name)
         footnote = '%s' % (cpsm_string)
         fig = PlotScoreHeatmap(score, footnote)
         fig.write_image(fn_out+'.png', scale=fig_scale)
         fig.write_html(fn_out+'.html')
         # Score Maps
-        fn_out = './viewer/figures/%s/score_map_%s' % (cps_string, model_name)
+        fn_out = './viewer/figures/%s/%s/skill_scores/score_map_%s' % (cps_string, model_name, model_name)
         footnote = '%s' % (cpsm_string)
         fig = PlotScoreMap(score, geojson, country_name, footnote)
         fig.write_image(fn_out+'.png', scale=fig_scale)
@@ -115,13 +126,13 @@ def generate_graphics():
         importance['eoname'] = importance['eoname'].replace(eoname_replace)
         if len(importance) > 0:
             # Feature importance Heatmap
-            fn_out = './viewer/figures/%s/importance_heatmap_%s' % (cps_string, model_name)
+            fn_out = './viewer/figures/%s/%s/feature_importance/importance_heatmap_%s' % (cps_string, model_name, model_name)
             footnote = '%s' % (cpsm_string)
             fig = PlotImportanceHeatmap(importance, footnote)
             fig.write_image(fn_out+'.png', scale=fig_scale)
             fig.write_html(fn_out+'.html')
             # Feature importance Maps
-            fn_out = './viewer/figures/%s/importance_map_%s' % (cps_string, model_name)
+            fn_out = './viewer/figures/%s/%s/feature_importance/importance_map_%s' % (cps_string, model_name, model_name)
             footnote = '%s' % (cpsm_string)
             fig = PlotImportanceMap(importance, geojson, country_name, footnote)
             fig.write_image(fn_out+'.png', scale=fig_scale)
@@ -155,7 +166,7 @@ def generate_graphics():
         for i, (year, lead, month, monthL) in year_lead_table.iterrows():
             temp = hcst[(hcst['year'] == year) & (hcst['lead'] == lead)]
             # Forecast Map (percent to recent 10-year mean)
-            fn_out = './viewer/figures/%s/hcst_perror_map_%s_%04d_%02d' % (cps_string, model_name, year, month)
+            fn_out = './viewer/figures/%s/%s/hindcast/hcst_perror_map_%s_%04d_%02d' % (cps_string, model_name, model_name, year, month)
             footnote = "%s-%s at %04d.%02d" % (cps_string, model_name, year, month)
             fig = PlotForecastMap(temp[temp['variable'] == 'yield_perror'], geojson, country_name, footnote, ftype='hindcast')
             fig.write_image(fn_out+'.png', scale=fig_scale)
@@ -177,19 +188,19 @@ def generate_graphics():
             if pd.to_datetime('%04d-%02d-15'%(year, month)) > todate: continue
             temp = fcst[(fcst['year'] == year) & (fcst['lead'] == lead)]
             # Forecast Map (percent to recent 10-year mean)
-            fn_out = './viewer/figures/%s/fcst_p10_map_%s_%04d_%02d' % (cps_string, model_name, year, month)
+            fn_out = './viewer/figures/%s/%s/forecast/fcst_p10_map_%s_%04d_%02d' % (cps_string, model_name, model_name, year, month)
             footnote = "%s-%s at %04d.%02d" % (cps_string, model_name, year, month)
             fig = PlotForecastMap(temp[temp['variable'] == 'yield_fcst_p10'], geojson, country_name, footnote, ftype='forecast')
             fig.write_image(fn_out+'.png', scale=fig_scale)
             # Forecast Map (percent to recent 10-year mean) (detrend)
-            fn_out = './viewer/figures/%s/fcst_p10_dt_map_%s_%04d_%02d' % (cps_string, model_name, year, month)
+            fn_out = './viewer/figures/%s/%s/forecast/fcst_p10_dt_map_%s_%04d_%02d' % (cps_string, model_name, model_name, year, month)
             footnote = "%s-%s at %04d.%02d" % (cps_string, model_name, year, month)
             fig = PlotForecastMap(temp[temp['variable'] == 'yield_fcst_p10_dt'], geojson, country_name, footnote, ftype='forecast')
             fig.write_image(fn_out+'.png', scale=fig_scale)
         print('%s is processed.' % cpsm_string)
 
     # Figures and Tables
-    command = "rsync -auzv --exclude=.DS_Store ./viewer/figures/ /home/chc-data-out/people/dlee/viewer/figures/"
+    command = "rsync -auzv --exclude=.DS_Store --exclude=.ipynb_checkpoints/ ./viewer/figures/ /home/chc-data-out/people/dlee/viewer/figures/"
     print('='*50)
     print('Copy figures to /home/chc-data-out/people/dlee/viewer/figures/')
     print(command)
