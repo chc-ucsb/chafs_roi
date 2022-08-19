@@ -151,6 +151,15 @@ def PlotImportanceHeatmap(importance, footnote):
         tickvals = np.arange(0,7),
         ticktext=list(chain(*[[m[0]] for m in months]))[::-1]
     )
+    fig.update_yaxes(
+        title='',
+        autorange='reversed',
+        dtick=1,
+        tickmode = 'array',
+        tickvals = np.arange(temp.shape[0]),
+        ticktext = [fnid_adminx[fnid] for fnid in temp.index],
+        tickfont = {'family':'arial','size':14, 'color':'black'},
+    )
     fig.add_annotation(
             xref="paper", yref="paper",
             x=0, y=-.08,
@@ -335,6 +344,15 @@ def PlotScoreHeatmap(score, footnote):
         tickmode = 'array',
         tickvals = np.arange(0,5),
         ticktext = months[::-1],
+    )
+    fig.update_yaxes(
+        title='',
+        autorange='reversed',
+        dtick=1,
+        tickmode = 'array',
+        tickvals = np.arange(nse.shape[0]),
+        ticktext = [fnid_adminx[fnid] for fnid in nse.index],
+        tickfont = {'family':'arial','size':14, 'color':'black'},
     )
     fig.add_annotation(
         xref="paper", yref="paper",
