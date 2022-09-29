@@ -156,7 +156,7 @@ def create_input_data():
         ['Burkina Faso','Sorghum','Main']
     ]
     # Load crop area, production, yield data
-    df = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/GlobalCropData/main/public/gscd_data_stable.csv', index_col=0)
+    df = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_data_stable.csv', index_col=0)
     # Reduce data
     container = []
     for country_name, product_name, season_name in cps:
@@ -191,7 +191,7 @@ def create_input_data():
         'Burkina Faso': 'BF'
     },inplace=True)
     # Load FEWSNET admin boundaries
-    shape = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/GlobalCropData/main/public/gscd_shape_stable.csv', index_col=0)
+    shape = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.csv', index_col=0)
     fnids_eo = shape.FNID.reset_index(drop=True)
     # ---------------------------------------- #
 
