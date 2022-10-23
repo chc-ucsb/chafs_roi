@@ -191,7 +191,7 @@ def create_input_data():
         'Burkina Faso': 'BF'
     },inplace=True)
     # Load FEWSNET admin boundaries
-    shape = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.csv', index_col=0)
+    shape = gpd.read_file('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.json').drop(columns='id')
     fnids_eo = shape.FNID.reset_index(drop=True)
     # ---------------------------------------- #
 

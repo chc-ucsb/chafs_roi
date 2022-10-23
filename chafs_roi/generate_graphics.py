@@ -29,7 +29,7 @@ def run_command(command):
 def generate_graphics():
     
     # Load FEWSNET admin boundaries
-    shape = gpd.read_file('./data/shapefile/gscd_shape_stable.shp')
+    shape = gpd.read_file('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.json').drop(columns='id')
     shape['ADMINX'] = shape['ADMIN2'].fillna(shape['ADMIN1'])
     shape.geometry = shape.geometry.simplify(0.01)
     geojson = json.loads(shape[['FNID','geometry']].to_json())
@@ -45,7 +45,7 @@ def generate_graphics():
             (df['product'] == product_name) &
             (df['season'] == season_name) &
             (df['model'] == model_name) &
-            (df['year'] == 2022) &
+            (df['year'].isin([2022,2023])) &
             (df['out-of-sample'] == 2) &
             (df['variable'] == 'yield_fcst')
         ]
@@ -172,31 +172,32 @@ def generate_graphics():
             fig.write_image(fn_out+'.png', scale=fig_scale)
 
         # Forecast Results ------------------------- #
-        year = 2022
-        fcst = sim[
-            (sim['out-of-sample'] == 2) &
-            (sim['variable'].isin(['yield_fcst', 'yield_fcst_p10', 'yield_fcst_p10_dt']))
-        ]
-        fcst = fcst[fcst['year_adj'] == year]
-        fcst['monthL'] = fcst['month'].apply(lambda x: pd.to_datetime('2000-%02d-01' % x).strftime('%b'))
-        fcst = fcst.merge(shape, left_on='fnid', right_on='FNID')
-        year_lead_table = fcst[['year','lead','month','monthL']].drop_duplicates()
-        year_lead_table = year_lead_table.sort_values(by=['year','month'], ascending=True).reset_index(drop=True)
-        todate = datetime.today() 
-        for i, (year, lead, month, monthL) in year_lead_table.iterrows():
-            # continue if future forecasts
-            if pd.to_datetime('%04d-%02d-15'%(year, month)) > todate: continue
-            temp = fcst[(fcst['year'] == year) & (fcst['lead'] == lead)]
-            # Forecast Map (percent to recent 10-year mean)
-            fn_out = './viewer/figures/%s/%s/forecast/fcst_p10_map_%s_%04d_%02d' % (cps_string, model_name, model_name, year, month)
-            footnote = "%s-%s at %04d.%02d" % (cps_string, model_name, year, month)
-            fig = PlotForecastMap(temp[temp['variable'] == 'yield_fcst_p10'], geojson, country_name, footnote, ftype='forecast')
-            fig.write_image(fn_out+'.png', scale=fig_scale)
-            # Forecast Map (percent to recent 10-year mean) (detrend)
-            fn_out = './viewer/figures/%s/%s/forecast/fcst_p10_dt_map_%s_%04d_%02d' % (cps_string, model_name, model_name, year, month)
-            footnote = "%s-%s at %04d.%02d" % (cps_string, model_name, year, month)
-            fig = PlotForecastMap(temp[temp['variable'] == 'yield_fcst_p10_dt'], geojson, country_name, footnote, ftype='forecast')
-            fig.write_image(fn_out+'.png', scale=fig_scale)
+        for year in [2022,2023]:
+            fcst = sim[
+                (sim['out-of-sample'] == 2) &
+                (sim['variable'].isin(['yield_fcst', 'yield_fcst_p10', 'yield_fcst_p10_dt']))
+            ]
+            fcst = fcst[fcst['year_adj'] == year]
+            fcst['monthL'] = fcst['month'].apply(lambda x: pd.to_datetime('2000-%02d-01' % x).strftime('%b'))
+            fcst = fcst.merge(shape, left_on='fnid', right_on='FNID')
+            year_lead_table = fcst[['year','lead','month','monthL']].drop_duplicates()
+            year_lead_table = year_lead_table.sort_values(by=['year','month'], ascending=True).reset_index(drop=True)
+            todate = datetime.today() 
+            if year_lead_table.shape[0] == 0 : continue
+            for i, (year, lead, month, monthL) in year_lead_table.iterrows():
+                # continue if future forecasts
+                if pd.to_datetime('%04d-%02d-15'%(year, month)) > todate: continue
+                temp = fcst[(fcst['year'] == year) & (fcst['lead'] == lead)]
+                # Forecast Map (percent to recent 10-year mean)
+                fn_out = './viewer/figures/%s/%s/forecast/fcst_p10_map_%s_%04d_%02d' % (cps_string, model_name, model_name, year, month)
+                footnote = "%s-%s at %04d.%02d" % (cps_string, model_name, year, month)
+                fig = PlotForecastMap(temp[temp['variable'] == 'yield_fcst_p10'], geojson, country_name, footnote, ftype='forecast')
+                fig.write_image(fn_out+'.png', scale=fig_scale)
+                # Forecast Map (percent to recent 10-year mean) (detrend)
+                fn_out = './viewer/figures/%s/%s/forecast/fcst_p10_dt_map_%s_%04d_%02d' % (cps_string, model_name, model_name, year, month)
+                footnote = "%s-%s at %04d.%02d" % (cps_string, model_name, year, month)
+                fig = PlotForecastMap(temp[temp['variable'] == 'yield_fcst_p10_dt'], geojson, country_name, footnote, ftype='forecast')
+                fig.write_image(fn_out+'.png', scale=fig_scale)
         print('%s is processed.' % cpsm_string)
 
     # Figures and Tables

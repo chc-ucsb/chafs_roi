@@ -31,6 +31,62 @@ def run_command(command):
     return
 
 def stream_eodata():
+    # NDVI-eVIIRS =====================================
+    # a) Mirror all GeoTiff files from USGS http server to "ndvi_eviirs_mirror"
+    # Get all file names from the FTP server
+    url = 'https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/fews/viewer_G5/eviirsndvi_africa_pentad_data/'
+    infile = LinkFromURL(url)
+    infile = [f for f in infile if f.startswith('data_20')]
+    infile_text = ", ".join([str(f) for f in infile])
+    # Download using wget
+    command = f'''wget -m -nd \
+    -A "{infile_text}" \
+    -R "index.html*" \
+    https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/fews/viewer_G5/eviirsndvi_africa_pentad_data/ \
+    -P /home/chc-sandbox/people/dlee/ndvi_eviirs_mirror/ \
+    -q --show-progress
+    '''
+    print('='*50)
+    print('Mirroring NDVI-eVIIRS')
+    run_command(command)
+    # b) Generate symbolic links from "ndvi_eviirs_mirror" to "ndvi_eviirs"
+    def date2dekad3(dt):
+        cmat = np.vstack([np.arange(1,13).repeat(3), 
+                          np.tile(np.arange(1,22,10), 12), 
+                          np.tile(np.array([1,2,3]), 12),
+                          np.arange(1,37)]).T
+        year, mon, day = dt.year, dt.month, dt.day
+        idx = (cmat[:,0] == mon) & (cmat[:,1] == day)
+        dkd = cmat[idx,2][0]
+        return dkd
+    print('-'*50)
+    # Select valid files (we only target pentad data)
+    infile = sorted(glob.glob('/home/chc-sandbox/people/dlee/ndvi_eviirs_mirror/*.tiff'))
+    # make a timeindex
+    start, end = [], []
+    for f in infile:
+        se = f.split('/data_')[1].split('.')[0].split('_')
+        start.append(se[0])
+        end.append(se[1])
+    # time difference is 7, 8, 9, or 10 days
+    time = pd.DataFrame(list(zip(start, end)), columns=['start','end'])
+    time = time.apply(lambda x: pd.to_datetime(x))
+    time['diff'] = time['end'] - time['start']
+    sel1 = time['diff'].dt.days.isin([7,8,9,10]) # Pentad data
+    sel2 = time['start'].dt.day.isin([1,11,21])  # Dekadal start
+    # select valid files
+    src_filns = list(compress(infile, sel1&sel2))
+    # Load filenames
+    src_short = [os.path.split(filn)[1] for filn in src_filns]
+    # Create symbolic links
+    date_cal = pd.to_datetime([short[5:13] for short in src_short])
+    date_dkd = [date2dekad3(t) for t in date_cal]
+    loc_filns = ['/home/chc-sandbox/people/dlee/ndvi_eviirs/ndvi.eviirs.%04d.%02d%1d.tif' % (year, month, dkd) for year, month, dkd in zip(date_cal.year, date_cal.month, date_dkd)]
+    for filn_in, filn_out in zip(src_filns, loc_filns):
+        if os.path.exists(filn_out): os.remove(filn_out)
+        os.symlink(filn_in, filn_out)
+        print('%s is saved.' % filn_out)
+    
     # NDVI-eMODIS =====================================
     # a) Mirror 2020-current GeoTiff files from USGS http server to "ndvi_emodis_mirror"
     command = 'wget -m -nd --reject="data_202???01_202???28.tiff, data_202???01_202???29.tiff, data_202???01_202???30.tiff, data_202???01_202???31.tiff" -A "data_202?*.tiff" https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/fews/viewer_G5/emodisndvic6v2_africa_dekad_data -P /home/chc-sandbox/people/dlee/ndvi_emodis_mirror/ -q --show-progress'
@@ -64,8 +120,6 @@ def stream_eodata():
         os.symlink(filn_in, filn_out)
         print('%s is saved.' % filn_out)
     # =================================================
-
-
 
     # 2. NOAA-CPC Global Daily Temperature ============
     # a) Mirror annual NetCDF files

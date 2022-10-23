@@ -67,14 +67,14 @@ def generate_viewer_sim():
     
     # Crop Production Data ----------------------------- #
     # Load FEWSNET admin boundaries
-    shape = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/GlobalCropData/main/public/gscd_shape_stable.csv', index_col=0)
+    shape = gpd.read_file('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.json').drop(columns='id')
     # shape = shape[shape.ADMIN0.isin(country_to_use)].reset_index(drop=True)
     dist_info = shape[['FNID','ADMIN0','ADMIN1','ADMIN2']]
     dist_info.columns = ['fnid','country','admin1','admin2']
     column_order = ['fnid','country','admin1','admin2','year','product','season','month','dekad','day','out-of-sample','variable','value']
 
     # Load crop area, production, yield data
-    df = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/GlobalCropData/main/public/gscd_data_stable.csv', index_col=0)
+    df = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_data_stable.csv', index_col=0)
     # Reduce data according to CPS
     container = []
     for (country_name, product_name, season_name, model_name, exp_name) in cpsme_list:
