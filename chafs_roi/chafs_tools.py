@@ -330,13 +330,13 @@ def CHAFS_Aggregate_CPSM(cpsme):
     # Merge containers
     stack_value = pd.concat(stack_value, axis=0).reset_index(drop=True)
     stack_value = stack_value.merge(fnids_info_sub, left_on='fnid', right_on='fnid')
-    stack_value = stack_value[['fnid','country','name','product','season_name','harvest_end','year','lead','pred','value','variable']]
+    stack_value = stack_value[['fnid','country','name','product','season_name','harvest_month','year','lead','pred','value','variable']]
     stack_score = pd.concat(stack_score, axis=0).reset_index(drop=True)
     stack_score = stack_score.merge(fnids_info_sub, left_on='fnid', right_on='fnid')
-    stack_score = stack_score[['fnid','country','name','product','season_name','harvest_end','lead','score','pred','value']]
+    stack_score = stack_score[['fnid','country','name','product','season_name','harvest_month','lead','score','pred','value']]
     stack_importance = pd.concat(stack_importance, axis=0).reset_index(drop=True)
     stack_importance = stack_importance.merge(fnids_info_sub, left_on='fnid', right_on='fnid')
-    stack_importance = stack_importance[['fnid','country','name','product','season_name','harvest_end','lead','eoname','value']]
+    stack_importance = stack_importance[['fnid','country','name','product','season_name','harvest_month','lead','eoname','value']]
 
     # Skill calculation by time and district ----------------- #
     # Tables for skill calculation

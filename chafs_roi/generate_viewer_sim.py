@@ -9,6 +9,7 @@ import pandas as pd
 import geopandas as gpd
 from .chafs_tools import CHAFS_Aggregate_CPSM
 
+
 def month_date(year, forecast_end, lead):
     # No year (scores)
     if pd.isna(year): year = 2000
@@ -17,6 +18,7 @@ def month_date(year, forecast_end, lead):
     if pd.isna(lead): lead = 0
     ld = pd.DateOffset(months=lead)
     return fe-ld
+
 
 def generate_viewer_sim():
     # Export a specific cpsme to "viewer_data_sim.csv" - # 
@@ -81,10 +83,12 @@ def generate_viewer_sim():
         sub = df[
                 (df['country'] == country_name) &
                 (df['product'] == product_name) &
-                (df['season_name'] == season_name)
+                (df['season_name'] == season_name) &
+                (df['gscd_code'] == 'calibrated')
         ]
         container.append(sub)
     data = pd.concat(container, axis=0).reset_index(drop=True)
+    data['year'] = data['harvest_year']
     data.rename(columns={'season_name':'season', 'indicator':'variable'}, inplace=True)
     data = data[['fnid','product','season','year','variable','value']]
     container0 = data.copy()
@@ -210,8 +214,6 @@ def generate_viewer_sim():
     print('%s is saved.' % fn_out)
     # -------------------------------------------------- #
     
-    
-    
     # Merge "viewer_data_sim.csv" and "viewer_data_com.csv"
     # (1) Complicated approach
     df_com = pd.read_csv('./viewer/viewer_data_com.csv', low_memory=False).drop(['Unnamed: 0'],axis=1)
@@ -246,8 +248,7 @@ def generate_viewer_sim():
     print('%s is saved.' % fn_out)
     # -------------------------------------------------- #
     
-    
-    # -------------------------------------------------- #
+    # Check Country-Product-Season-Model --------------- #
     df = pd.read_csv('./viewer/viewer_data.csv', low_memory=False).drop(['Unnamed: 0'],axis=1)
     df['date'] = pd.to_datetime(df[['year','month','day']])
     cpsm = df.loc[df['model'].notna(),['country','product','season','model']].drop_duplicates()

@@ -5,10 +5,11 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import xarray as xr
-from .tools import split, save_hdf
+from .tools import split, save_hdf, Load_GSCD
 import scipy
 import scipy.signal
 from scipy.stats import zscore
+from sklearn.preprocessing import StandardScaler
 warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
 
 def dekad2date(dkd, string=False):
@@ -65,6 +66,11 @@ def MergeUpdateData(name):
         filns_agg_crop = sorted(glob.glob(path_chafs + '/data/eodata/ndvi_emodis/*.crop.*.hdf'))
         filn_all = path_chafs + '/data/eodata/adm.ndvi.emodis.all.hdf'
         filn_crop = path_chafs + '/data/eodata/adm.ndvi.emodis.crop.hdf'
+    elif name == 'ndvi_eviirs':
+        filns_agg_all = sorted(glob.glob(path_chafs + '/data/eodata/ndvi_eviirs/*.all.*.hdf'))
+        filns_agg_crop = sorted(glob.glob(path_chafs + '/data/eodata/ndvi_eviirs/*.crop.*.hdf'))
+        filn_all = path_chafs + '/data/eodata/adm.ndvi.eviirs.all.hdf'
+        filn_crop = path_chafs + '/data/eodata/adm.ndvi.eviirs.crop.hdf'
     elif name == 'ndvi_avhrr':
         filns_agg_all = sorted(glob.glob(path_chafs + '/data/eodata/ndvi_avhrr-v5/*.all.*.hdf'))
         filns_agg_crop = sorted(glob.glob(path_chafs + '/data/eodata/ndvi_avhrr-v5/*.crop.*.hdf'))
@@ -155,43 +161,14 @@ def create_input_data():
         ['Burkina Faso','Maize','Main'],
         ['Burkina Faso','Sorghum','Main']
     ]
-    # Load crop area, production, yield data
-    df = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_data_stable.csv', index_col=0)
-    # Reduce data
-    container = []
-    for country_name, product_name, season_name in cps:
-        sub = df[
-                (df['country'] == country_name) &
-                (df['product'] == product_name) &
-                (df['season_name'] == season_name)
-        ]
-        container.append(sub)
-    df = pd.concat(container, axis=0)
+    # Load GSCD crop area, production, yield data
+    df, fnids_info, shape = Load_GSCD(cps)
     # Pivot table format
     table = df.pivot_table(
-        index='year',          
-        columns=['fnid','country','name','product','season_name','harvest_end','indicator'],         
-        values='value'
+        index='harvest_year',          
+        columns=['fnid','country','name','product','season_name','growing_month','harvest_month','indicator'],         
+        values='value', aggfunc='sum'
     )
-    # Record years
-    record = table.loc[:,pd.IndexSlice[:,:,:,:,:,:,'yield']].notna().sum().reset_index().rename(columns={0:'record'})
-
-    # FNID information
-    fnids_info = table.columns.droplevel(-1).to_frame().drop_duplicates().reset_index(drop=True)
-    fnids_info = fnids_info.merge(
-        record[['fnid','product','season_name','record']], 
-        left_on=['fnid','product','season_name'], 
-        right_on=['fnid','product','season_name']
-    )
-    fnids_info.insert(2, 'country_iso', fnids_info['country'])
-    fnids_info['country_iso'].replace({
-        'Kenya': 'KE',
-        'Somalia': 'SO',
-        'Malawi': 'MW',
-        'Burkina Faso': 'BF'
-    },inplace=True)
-    # Load FEWSNET admin boundaries
-    shape = gpd.read_file('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.json').drop(columns='id')
     fnids_eo = shape.FNID.reset_index(drop=True)
     # ---------------------------------------- #
 
@@ -210,13 +187,12 @@ def create_input_data():
     print('Exporting CROP data is completed.')
     # ---------------------------------------- #
 
-
     # Merge & Update the latest admin-level aggregated data
     '''
     Previously, we "updated" the aggregated file with newly added daily files, but we downgraded it to aggregate all files everytime.
     '''
     # Merge & Update the latest admin-level aggregated data 
-    for name in ['etos', 'tmax', 'tmin', 'gdd', 'prcp_chrips', 'prcp_chrips_prelim', 'ndvi_emodis']:
+    for name in ['etos', 'tmax', 'tmin', 'gdd', 'prcp_chrips', 'prcp_chrips_prelim', 'ndvi_eviirs']:
         MergeUpdateData(name)
     # ---------------------------------------- #
 
@@ -234,10 +210,19 @@ def create_input_data():
     prcp_chirps_p = pd.read_hdf(path_chafs + '/data/eodata/adm.prcp.chirps-v2p.%s.hdf' % cropland)[fnids_eo]
     prcp_chirps_p = prcp_chirps_p.loc[prcp_chirps_p.index[prcp_chirps_p.index > prcp_chirps.index.max()]]
     prcp = pd.concat([prcp_chirps, prcp_chirps_p], axis=0)
-    # Link the rescaled AVHRR-v5 (1981-06 - 2002-07) to eMODIS (2002-07 - present)
-    ndvi_emodis = pd.read_hdf(path_chafs + '/data/eodata/adm.ndvi.emodis.%s.hdf' % cropland)[fnids_eo]
-    ndvi_avhrr_rcon = pd.read_hdf(path_chafs + '/data/eodata/adm.ndvi.avhrr-v5_rcon.%s.hdf' % cropland)[fnids_eo]
-    ndvi_raw = pd.concat([ndvi_avhrr_rcon, ndvi_emodis], axis=0)
+    
+    # Blending NDVI dataset
+    avhrr_emodis_rcon = pd.read_hdf(path_chafs + '/data/eodata/adm.ndvi.avhrr_emodis.%s.hdf' % cropland)[fnids_eo]
+    eviirs = pd.read_hdf(path_chafs + '/data/eodata/adm.ndvi.eviirs.%s.hdf' % cropland)[fnids_eo]
+    eviirs_clean = pd.DataFrame().reindex_like(eviirs)
+    for fnid in eviirs.columns:
+        ev = eviirs[fnid]
+        ev[ev <= 0.01] = np.nan
+        ev_std = ev.to_frame().apply(lambda x: StandardScaler().fit_transform(x[:,None]).squeeze()).squeeze()
+        ev[ev_std.abs() > 3] = np.nan
+        eviirs_clean[fnid] = ev
+    ndvi_raw = pd.concat([avhrr_emodis_rcon, eviirs_clean], axis=0)
+    # ---------------------------------------- #
 
     # Define start and end date of dekadal data
     # - prcp starts at 1981-01-01

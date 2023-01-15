@@ -24,6 +24,60 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 
 
+def Load_GSCD(cps):
+    # Load crop area, production, yield data
+    df = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_data_stable.csv', index_col=0)
+    # df = pd.read_csv('/Users/dlee/gscd/public/gscd_data_stable.csv', index_col=0)
+
+    # Reduce data
+    container = []
+    for country_name, product_name, season_name in cps:
+        sub = df[
+                (df['country'] == country_name) &
+                (df['product'] == product_name) &
+                (df['season_name'] == season_name)
+        ]
+        container.append(sub)
+    df = pd.concat(container, axis=0).reset_index(drop=True)
+
+    # Pivot table format
+    table = df.pivot_table(
+        index='harvest_year',
+        columns=['fnid','country','name','product','season_name','harvest_month','indicator'],         
+        values='value'
+    )
+
+    # Record years
+    record = table.melt().pivot_table(
+        index=['fnid','country','name','product','season_name','harvest_month'],
+        columns='indicator',values='value',aggfunc='count'
+    )
+    record = record.reset_index()
+    record = record.rename(columns={'area':'record_area','production':'record_production','yield':'record_yield'})
+
+    # FNID information
+    info = table.columns.droplevel(-1).to_frame().drop_duplicates().reset_index(drop=True)
+    info = info.merge(
+        record[['fnid','product','season_name','record_area','record_production','record_yield']], 
+        left_on=['fnid','product','season_name'], 
+        right_on=['fnid','product','season_name']
+    ) 
+    info.insert(2, 'country_iso', info['country'])
+    info['country_iso'].replace({
+        'Kenya': 'KE',
+        'Somalia': 'SO',
+        'Malawi': 'MW',
+        'Burkina Faso': 'BF'
+    },inplace=True)
+
+    # Load FEWSNET admin boundaries
+    shape = gpd.read_file('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.json').drop(columns='id')
+    # shape = gpd.read_file('/Users/dlee/gscd/public/gscd_shape_stable.json').drop(columns='id')
+    shape = shape[shape['ADMIN0'].isin(info.country.unique())].reset_index(drop=True)
+    
+    return df, info, shape
+
+
 def month2lead(cps, m):
     [country_name, product_name, season_name] = cps
     cps_name = country_name+'_'+product_name+'_'+season_name
@@ -470,6 +524,9 @@ def RasterResampling(filn_src_rst, filn_dst_nc, filn_dst_rst=None):
     elif 'x' in list(data.coords.keys()):
         rows, cols = dst_shape = (len(data.y), len(data.x))
         lat = data.y.values; lon = data.x.values
+    elif 'X' in list(data.coords.keys()):
+        rows, cols = dst_shape = (len(data.Y), len(data.X))
+        lat = data.Y.values; lon = data.X.values
         
     # Resampling
     d = np.abs(np.mean(lat[:-1] - lat[1:]))

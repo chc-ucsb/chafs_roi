@@ -15,6 +15,7 @@ from .tools import month2lead
 from .chafs_graphic import PlotForecastMap, PlotScoreHeatmap, PlotScoreMap, PlotImportanceHeatmap, PlotImportanceMap
 import subprocess
 import shlex
+pd.options.mode.chained_assignment = None
 
 
 def run_command(command):
@@ -52,7 +53,6 @@ def generate_graphics():
         cpsm.loc[i,'latest'] = sub['date'].max()
     cpsm = cpsm.sort_values(by=['country','product','season','model']).reset_index(drop=True)
     print(cpsm)
-
 
     ####################
     fig_scale = 1.3

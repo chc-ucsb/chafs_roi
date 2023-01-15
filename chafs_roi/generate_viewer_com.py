@@ -28,18 +28,18 @@ def generate_viewer_com():
 #     # (1) Reforecast all years ------------------------- #
 #     # In order to run multiprocessing codes on Ipython, we need to make a function of main work
 #     # (Source: https://medium.com/@grvsinghal/speed-up-your-python-code-using-multiprocessing-on-windows-and-jupyter-or-ipython-2714b49d6fac)
-    list_model = ['ET']
-    cps = [
-        ['Somalia','Sorghum','Deyr'],
-        ['Somalia','Sorghum','Gu'],
-        ['Somalia','Maize','Deyr'],
-        ['Somalia','Maize','Gu'],
-        ['Malawi','Maize','Main'],
-        ['Kenya','Maize','Long'],
-        ['Kenya','Maize','Short'],
-        ['Burkina Faso','Maize','Main'],
-#         ['Burkina Faso','Sorghum','Main']
-    ]
+#     list_model = ['ET']
+#     cps = [
+#         ['Somalia','Sorghum','Deyr'],
+#         ['Somalia','Sorghum','Gu'],
+#         ['Somalia','Maize','Deyr'],
+#         ['Somalia','Maize','Gu'],
+#         ['Malawi','Maize','Main'],
+#         ['Kenya','Maize','Long'],
+#         ['Kenya','Maize','Short'],
+#         ['Burkina Faso','Maize','Main'],
+#         # ['Burkina Faso','Sorghum','Main']
+#     ]
 #     comb = product(cps, list_model)
 #     stime = time.time()
 #     for (country_name, product_name, season_name), model_name in comb:
@@ -180,10 +180,12 @@ def generate_viewer_com():
         sub = df[
                 (df['country'] == country_name) &
                 (df['product'] == product_name) &
-                (df['season_name'] == season_name)
+                (df['season_name'] == season_name) &
+                (df['gscd_code'] == 'calibrated')
         ]
         container.append(sub)
     data = pd.concat(container, axis=0).reset_index(drop=True)
+    data['year'] = data['harvest_year']
     data.rename(columns={'season_name':'season', 'indicator':'variable'}, inplace=True)
     data = data[['fnid','product','season','year','variable','value']]
     container0 = data.copy()
@@ -240,7 +242,6 @@ def generate_viewer_com():
     
     
     # (3) Export reforecast results -------------------- #
-    
     # Base dekads for temporal referencing
     dekad0 = pd.date_range('1980-01-01', '2023-12-31')
     d = dekad0.day - np.clip((dekad0.day-1) // 10, 0, 2)*10 - 1
@@ -523,21 +524,21 @@ def generate_viewer_com():
     # shape.to_file(fn_out)
     # print('%s is saved.' % fn_out)
     
-    df = pd.read_csv('./viewer/viewer_data_com.csv', low_memory=False).drop(['Unnamed: 0'],axis=1)
-    df['date'] = pd.to_datetime(df[['year','month','day']])
-    cps = df.loc[df['season'].notna(),['country','product','season']].drop_duplicates().reset_index(drop=True)
-    for i, (country_name, product_name, season_name) in cps.iterrows():
-        sub = df[
-            (df['country'] == country_name) &
-            (df['product'] == product_name) &
-            (df['season'] == season_name) &
-            (df['year'] == 2022) &
-            (df['out-of-sample'] == 2) &
-            (df['variable'] == 'yield_fcst')
-        ]
-        # print(sub.groupby(['country','fnid','product','season'])['date'].max())
-        cps.loc[i,'latest'] = sub['date'].max()
-    print(cps)
+    # df = pd.read_csv('./viewer/viewer_data_com.csv', low_memory=False).drop(['Unnamed: 0'],axis=1)
+    # df['date'] = pd.to_datetime(df[['year','month','day']])
+    # cps = df.loc[df['season'].notna(),['country','product','season']].drop_duplicates().reset_index(drop=True)
+    # for i, (country_name, product_name, season_name) in cps.iterrows():
+    #     sub = df[
+    #         (df['country'] == country_name) &
+    #         (df['product'] == product_name) &
+    #         (df['season'] == season_name) &
+    #         (df['year'].isin([2022,2023])) &
+    #         (df['out-of-sample'] == 2) &
+    #         (df['variable'] == 'yield_fcst')
+    #     ]
+    #     # print(sub.groupby(['country','fnid','product','season'])['date'].max())
+    #     cps.loc[i,'latest'] = sub['date'].max()
+    # print(cps)
     # print(df['variable'].unique())
     # df[['out-of-sample','variable']].drop_duplicates()
     # -------------------------------------------------- #

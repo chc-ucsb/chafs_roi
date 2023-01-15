@@ -30,8 +30,21 @@ def run_command(command):
         print(line.rstrip())
     return
 
+def date2dekad3(dt):
+    cmat = np.vstack([np.arange(1,13).repeat(3), 
+                      np.tile(np.arange(1,22,10), 12), 
+                      np.tile(np.array([1,2,3]), 12),
+                      np.arange(1,37)]).T
+    year, mon, day = dt.year, dt.month, dt.day
+    idx = (cmat[:,0] == mon) & (cmat[:,1] == day)
+    dkd = cmat[idx,2][0]
+    return dkd
+
 def stream_eodata():
-    # NDVI-eVIIRS =====================================
+    
+    # NDVI-eVIIRS ===================================== #
+    print('#','='*50,'#')
+    print('NDVI-eVIIRS')
     # a) Mirror all GeoTiff files from USGS http server to "ndvi_eviirs_mirror"
     # Get all file names from the FTP server
     url = 'https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/fews/viewer_G5/eviirsndvi_africa_pentad_data/'
@@ -46,20 +59,8 @@ def stream_eodata():
     -P /home/chc-sandbox/people/dlee/ndvi_eviirs_mirror/ \
     -q --show-progress
     '''
-    print('='*50)
-    print('Mirroring NDVI-eVIIRS')
     run_command(command)
     # b) Generate symbolic links from "ndvi_eviirs_mirror" to "ndvi_eviirs"
-    def date2dekad3(dt):
-        cmat = np.vstack([np.arange(1,13).repeat(3), 
-                          np.tile(np.arange(1,22,10), 12), 
-                          np.tile(np.array([1,2,3]), 12),
-                          np.arange(1,37)]).T
-        year, mon, day = dt.year, dt.month, dt.day
-        idx = (cmat[:,0] == mon) & (cmat[:,1] == day)
-        dkd = cmat[idx,2][0]
-        return dkd
-    print('-'*50)
     # Select valid files (we only target pentad data)
     infile = sorted(glob.glob('/home/chc-sandbox/people/dlee/ndvi_eviirs_mirror/*.tiff'))
     # make a timeindex
@@ -86,54 +87,62 @@ def stream_eodata():
         if os.path.exists(filn_out): os.remove(filn_out)
         os.symlink(filn_in, filn_out)
         print('%s is saved.' % filn_out)
+    print('#','='*50,'#')
+    print('')
+    # ================================================= #
     
-    # NDVI-eMODIS =====================================
-    # a) Mirror 2020-current GeoTiff files from USGS http server to "ndvi_emodis_mirror"
-    command = 'wget -m -nd --reject="data_202???01_202???28.tiff, data_202???01_202???29.tiff, data_202???01_202???30.tiff, data_202???01_202???31.tiff" -A "data_202?*.tiff" https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/fews/viewer_G5/emodisndvic6v2_africa_dekad_data -P /home/chc-sandbox/people/dlee/ndvi_emodis_mirror/ -q --show-progress'
-    print('='*50)
-    print('Mirroring NDVI-eMODIS')
-    print(command)
-    run_command(command)
+    
+#     # NDVI-eMODIS ===================================== #
+#     # a) Mirror 2020-current GeoTiff files from USGS http server to "ndvi_emodis_mirror"
+#     command = 'wget -m -nd --reject="data_202???01_202???28.tiff, data_202???01_202???29.tiff, data_202???01_202???30.tiff, data_202???01_202???31.tiff" -A "data_202?*.tiff" https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/fews/viewer_G5/emodisndvic6v2_africa_dekad_data -P /home/chc-sandbox/people/dlee/ndvi_emodis_mirror/ -q --show-progress'
+#     print('='*50)
+#     print('Mirroring NDVI-eMODIS')
+#     print(command)
+#     run_command(command)
 
-    # b) Generate symbolic links from "ndvi_emodis_mirror" to "ndvi_emodis"
-    def date2dekad3(dt):
-        cmat = np.vstack([np.arange(1,13).repeat(3), 
-                          np.tile(np.arange(1,22,10), 12), 
-                          np.tile(np.array([1,2,3]), 12),
-                          np.arange(1,37)]).T
-        year, mon, day = dt.year, dt.month, dt.day
-        idx = (cmat[:,0] == mon) & (cmat[:,1] == day)
-        dkd = cmat[idx,2][0]
-        return dkd
-    print('-'*50)
+#     # b) Generate symbolic links from "ndvi_emodis_mirror" to "ndvi_emodis"
+#     # Select valid files (we only target dekad data)
+#     infile = sorted(glob.glob('/home/chc-sandbox/people/dlee/ndvi_emodis_mirror/*.tiff'))
+#     # make a timeindex
+#     start, end = [], []
+#     for f in infile:
+#         se = f.split('/data_')[1].split('.')[0].split('_')
+#         start.append(se[0])
+#         end.append(se[1])
+#     # time difference is 7, 8, 9, or 10 days
+#     time = pd.DataFrame(list(zip(start, end)), columns=['start','end'])
+#     time = time.apply(lambda x: pd.to_datetime(x))
+#     time['diff'] = time['end'] - time['start']
+#     sel1 = time['diff'].dt.days.isin([7,8,9,10]) # Pentad data
+#     sel2 = time['start'].dt.day.isin([1,11,21])  # Dekadal start
+#     # select valid files
+#     src_filns = list(compress(infile, sel1&sel2))
+#     # Load filenames
+#     src_short = [os.path.split(filn)[1] for filn in src_filns]
+#     # Create symbolic links
+#     date_cal = pd.to_datetime([short[5:13] for short in src_short])
+#     date_dkd = [date2dekad3(t) for t in date_cal]
+#     loc_filns = ['/home/chc-sandbox/people/dlee/ndvi_emodis/ndvi.emodis.%04d.%02d%1d.tif' % (year, month, dkd) for year, month, dkd in zip(date_cal.year, date_cal.month, date_dkd)]
+#     for filn_in, filn_out in zip(src_filns, loc_filns):
+#         if os.path.exists(filn_out): os.remove(filn_out)
+#         os.symlink(filn_in, filn_out)
+#         print('%s is saved.' % filn_out)
+#     # ================================================= #
 
-    # Load filenames
-    src_dir = '/home/chc-sandbox/people/dlee/ndvi_emodis_mirror'
-    src_filns = sorted(glob.glob(os.path.join(src_dir, '*.tiff')))
-    src_short = [os.path.split(filn)[1] for filn in src_filns]
-    # Create symbolic links
-    date_cal = pd.to_datetime([short[5:13] for short in src_short])
-    date_dkd = [date2dekad3(t) for t in date_cal]
-    loc_filns = ['/home/chc-sandbox/people/dlee/ndvi_emodis/ndvi.emodis.%04d.%02d%1d.tif' % (year, month, dkd) for year, month, dkd in zip(date_cal.year, date_cal.month, date_dkd)]
-    for filn_in, filn_out in zip(src_filns, loc_filns):
-        if os.path.exists(filn_out): os.remove(filn_out)
-        os.symlink(filn_in, filn_out)
-        print('%s is saved.' % filn_out)
-    # =================================================
 
-    # 2. NOAA-CPC Global Daily Temperature ============
+    # NOAA Temperature ================================ #
+    print('#','='*50,'#')
     # a) Mirror annual NetCDF files
     command = 'wget -m -nd -A "tmax.????.nc" ftp://ftp.cdc.noaa.gov/Datasets/cpc_global_temp/ -P /home/chc-sandbox/people/dlee/temp_noaa-cpc/ -q --show-progress'
-    print('='*50)
     print('MAX TEMP-NOAA-CPC')
     print(command)
     run_command(command)
-    print('-'*50)
+    print('#','-'*50,'#')
     command = 'wget -m -nd -A "tmin.????.nc" ftp://ftp.cdc.noaa.gov/Datasets/cpc_global_temp/ -P /home/chc-sandbox/people/dlee/temp_noaa-cpc/ -q --show-progress'
     print('MIN TEMP-NOAA-CPC')
     print(command)
     run_command(command)
-    print('-'*50)
+    print('#','-'*50,'#')
 
     # b) Extract all daily NetCDF files of each annual file.
     # - The recent 45 days of the latest year is forced to be re-extracted.
@@ -244,11 +253,15 @@ def stream_eodata():
             ds_gdd = xr.Dataset({'gdd': (['time','lat','lon'], gdd)}, coords={'lat':lat, 'lon':lon, 'time':time})
             ds_gdd.to_netcdf(fn_out)
             print('%s is saved..' % fn_out)
+    
+    print('#','='*50,'#')
+    print('')
+    # ================================================= #
 
-
-    # ETOS-NOAA =======================================
+    
+    # ETOS-NOAA ======================================= #
     # a) Mirror NetCDF files from NOAA FTP server to "ndvi_emodis"
-    print('='*50)
+    print('#','='*50,'#')
     print('MAX TEMP-NOAA-CPC')
     command = 'wget -m -nd -A "ETos_fine_*.nc" -R ".listing" ftp://ftp.cdc.noaa.gov/Projects/RefET/global/Gen-0/fine_resolution/data_v2/ -P /home/chc-sandbox/people/dlee/etos_noaa/ -q --show-progress'
     print(command)
@@ -262,6 +275,60 @@ def stream_eodata():
         if os.path.exists(fn_dst): continue
         shutil.copyfile(fn_src, fn_dst)
         print('%s is saved.' % fn_dst)
-    # =================================================
+        
+    print('#','='*50,'#')
+    print('')
+    # ================================================= #
+    
+    
+    # FLDAS =========================================== #
+    print('#','='*50,'#')
+    print('FLDAS')
+    # Check & Extract all FLDAS files
+    dir_src = '/home/FEWSNET_NASA/GLOBAL/version1/MONTHLY/'
+    dir_dst = '/home/chc-sandbox/people/dlee/fldas/'
+    files_src_gz = sorted(glob.glob(dir_src+'FLDAS_NOAH01_C_GL_M.*.gz'))
+    files_src_nc = [fn[:-3] for fn in files_src_gz]
+    files_dst_nc = [dir_dst+file.split('/')[-1].split('.gz')[0] for file in files_src_gz]
+    for src_gz, src_nc, dst_nc in zip(files_src_gz, files_src_nc, files_dst_nc):
+        # Pass if exists
+        if os.path.exists(dst_nc): continue
+        # Copy a NetCDF file if exists
+        if os.path.exists(src_nc):
+            shutil.copy(src_nc, dst_nc)
+            print("%s is saved." % dst_nc)
+        else:
+            # Unzip if a NetCDF file does not exist
+            with gzip.open(src_gz, 'rb') as f_in:
+                with open(dst_nc, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+                    print("%s is unzipped." % dst_nc)
+                    
+    # Check available files
+    dir_dst = '/home/chc-sandbox/people/dlee/fldas/'
+    infile = sorted(glob.glob(dir_dst+'*.nc'))
+    date_dir = pd.to_datetime([fn.split('.')[-3][1:] for fn in infile], format='%Y%m')
+    date_car = pd.date_range('1982-01-01', date.today())
+    date_car = date_car[date_car.day == 1]
+    missing = date_car[~date_car.isin(date_dir)]
+    print('Missing month: ', list(missing.strftime('%Y-%m')))
+    # Extract African domain data
+    for fn_src, t in zip(infile, date_dir):
+        year, month = t.year, t.month
+        fn_smos = dir_dst + 'africa/SoilMoi00_10cm_tavg_{:04d}{:02d}.nc'.format(year,month)
+        fn_stmp = dir_dst + 'africa/SoilTemp00_10cm_tavg_{:04d}{:02d}.nc'.format(year,month)
+        fn_atmp = dir_dst + 'africa/Tair_f_tavg_{:04d}{:02d}.nc'.format(year,month)
+        if all([os.path.exists(fn) for fn in [fn_smos, fn_stmp, fn_atmp]]): continue
+        sub = xr.open_dataset(fn_src).sel(Y=slice(-40,40), X=slice(-20,55))
+        if not os.path.exists(fn_smos):
+            sub['SoilMoi00_10cm_tavg'].to_netcdf(fn_smos); print('%s is saved.' % fn_smos)
+        if not os.path.exists(fn_stmp):
+            sub['SoilTemp00_10cm_tavg'].to_netcdf(fn_stmp); print('%s is saved.' % fn_stmp)
+        if not os.path.exists(fn_atmp):
+            sub['Tair_f_tavg'].to_netcdf(fn_atmp); print('%s is saved.' % fn_atmp)
+            
+    print('#','='*50,'#')
+    print('')
+    # ================================================= #
     
     return

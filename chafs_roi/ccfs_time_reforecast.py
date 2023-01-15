@@ -59,7 +59,7 @@ def Reforecast_by_FNID(fnid, product_name, season_name, indicator_name, model_na
     tdx = y.index
     tdx_test = box['fcst'].index
     y_test = y[tdx_test]
-    harvest_end = box['harvest_end']
+    harvest_month = box['harvest_month']
     datemat = box['datemat']
     # - Forecast results
     lead_hcst = box['hcst']
@@ -70,18 +70,17 @@ def Reforecast_by_FNID(fnid, product_name, season_name, indicator_name, model_na
     model_fitted = box['model_fitted']
 
     # Crop data control
-    info, _ = CropDataControl(fnid, product_name, season_name, indicator=indicator_name)
+    info, _ = CropDataControl(fnid, product_name, season_name, indicator_name)
 
     # EO data control
     df = EODataControl(fnid)
     pname = df.columns
     npred = pname.shape[0]
-
-    fnid, country, name, product_name, season_name, harvest_end, forecast_end = info
+    fnid, country, name, product_name, season_name, growing_month, harvest_month, forecast_end = info
     obox = dict({
         'FNID': fnid, 'country':country, 'name':name, 'product_name': product_name,
-        'season_name':season_name, 'indicator_name':indicator_name,  
-        'harvest_end':harvest_end, 'forecast_end':forecast_end, 
+        'season_name':season_name, 'indicator_name':indicator_name, 
+        'growing_month':growing_month,'harvest_month':harvest_month, 'forecast_end':forecast_end, 
         'status':0, 'isTrend': isTrend,
         'flag_dekad':flag_dekad, 'flag_ext':flag_ext, 'flag_serial':flag_serial,
     })
@@ -250,14 +249,15 @@ def Reforecast_by_FNID(fnid, product_name, season_name, indicator_name, model_na
     return obox
 
 
-def CropDataControl(fnid, product_name, season_name, indicator):
-    # Select crop data
+def CropDataControl(fnid, product_name, season_name, indicator_name):
+    # Select crop data ------------------------------------ #
     crop = pd.read_hdf('./data_in/%s_crop_%s_%s.hdf' % (fnid, product_name, season_name))
-    crop = crop.loc[:,pd.IndexSlice[:,:,:,:,:,:,indicator]].droplevel(-1,axis=1)
+    crop = crop.loc[:,pd.IndexSlice[:,:,:,:,:,:,:,indicator_name]].droplevel(-1,axis=1)
     # Get basic information of admin unit
-    fnid, country, name, product_name, season_name, harvest_end = list(crop.columns.values[0])
+    fnid, country, name, product_name, season_name, growing_month, harvest_month = list(crop.columns.values[0])
+    # ----------------------------------------------------- #
 
-    # Forecasting ending month (ending month)
+    # Forecasting ending month (ending month) ------------- #
     cps_name = country+'_'+product_name+'_'+season_name
     if cps_name == 'Somalia_Maize_Deyr': forecast_end = '03-01'
     elif cps_name == 'Somalia_Maize_Gu': forecast_end = '08-01'
@@ -270,17 +270,18 @@ def CropDataControl(fnid, product_name, season_name, indicator):
     elif cps_name == 'Burkina Faso_Sorghum_Main': forecast_end = '10-01'
     else: raise ValueError('country, product_name, or season_name is not defined.')
     tdx_forecast_end = pd.to_datetime(['%4d-%02s-01' % (year, forecast_end[:2]) for year in crop.index])
-    info = (fnid, country, name, product_name, season_name, harvest_end, forecast_end)
+    info = (fnid, country, name, product_name, season_name, growing_month, harvest_month, forecast_end)
+    # ----------------------------------------------------- #
     
-    # Crop data control -------------- #
+    # Initial Cleaning ------------------------------------ #
     y = crop.copy()
     y[y == 0] = np.nan   # Remove zero value
-
     # Convert DataFrame to Series
     y = pd.Series(index = tdx_forecast_end, data = y.values.flatten()).rename_axis(index='date').rename('value')
     # Drop missing years
     tdx = y[y.notna()].index
     y = y[tdx]
+    # ----------------------------------------------------- #
     return info, y
 
 def EODataControl(fnid):
