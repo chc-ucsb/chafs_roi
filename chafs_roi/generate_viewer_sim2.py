@@ -1,4 +1,5 @@
 import os, json, glob, time
+import shutil
 from datetime import datetime
 from functools import reduce
 from itertools import product, combinations, compress
@@ -20,7 +21,7 @@ def month_date(year, forecast_end, lead):
     return fe-ld
 
 
-def generate_viewer_sim():
+def generate_viewer_sim2():
     # Export a specific cpsme to "viewer_data_sim.csv" - # 
     cpsme_list = [
         ['Somalia','Maize','Gu','XGB','YFT_ACUM_ALL'],
@@ -65,18 +66,16 @@ def generate_viewer_sim():
     # stack_importance.loc[stack_importance['value'].isna(),'value'] = 0
     # -------------------------------------------------- #
     
-    
-    
-    # Crop Production Data ----------------------------- #
+    # Crop Production Data ============================= #
     # Load FEWSNET admin boundaries
-    shape = gpd.read_file('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.json').drop(columns='id')
+    shape = gpd.read_file('/home/donghoonlee/chafs_roi/data/gscd_shape_stable.json').drop(columns='id')
     # shape = shape[shape.ADMIN0.isin(country_to_use)].reset_index(drop=True)
     dist_info = shape[['FNID','ADMIN0','ADMIN1','ADMIN2']]
     dist_info.columns = ['fnid','country','admin1','admin2']
     column_order = ['fnid','country','admin1','admin2','year','product','season','month','dekad','day','out-of-sample','variable','value']
 
     # Load crop area, production, yield data
-    df = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_data_stable.csv', index_col=0)
+    df = pd.read_csv('/home/donghoonlee/chafs_roi/data/gscd_data_stable.csv', index_col=0)
     # Reduce data according to CPS
     container = []
     for (country_name, product_name, season_name, model_name, exp_name) in cpsme_list:
@@ -87,7 +86,61 @@ def generate_viewer_sim():
                 (df['gscd_code'] == 'calibrated')
         ]
         container.append(sub)
-    data = pd.concat(container, axis=0).reset_index(drop=True)
+    df = pd.concat(container, axis=0).reset_index(drop=True)
+
+    # Pivot table format --------------------------------- #
+    area = df[df['indicator'] == 'area'].pivot_table(
+        index='harvest_year',
+        columns=['fnid','country','name','product','season_name','harvest_month'],         
+        values='value', aggfunc='sum'
+    )
+    prod = df[df['indicator'] == 'production'].pivot_table(
+        index='harvest_year',
+        columns=['fnid','country','name','product','season_name','harvest_month'],         
+        values='value', aggfunc='sum'
+    )
+    crop = df[df['indicator'] == 'yield'].pivot_table(
+        index='harvest_year',
+        columns=['fnid','country','name','product','season_name','harvest_month'],         
+        values='value', aggfunc='sum'
+    )
+    # Extend columns
+    area_cols = area.columns.to_frame().reset_index(drop=True)
+    prod_cols = prod.columns.to_frame().reset_index(drop=True)
+    crop_cols = crop.columns.to_frame().reset_index(drop=True)
+    cols_extend = pd.concat([area_cols, prod_cols, crop_cols],axis=0).drop_duplicates().reset_index(drop=True)
+    cols_extend = pd.MultiIndex.from_frame(cols_extend)
+    area = area.reindex(columns = cols_extend)
+    prod = prod.reindex(columns = cols_extend)
+    crop = crop.reindex(columns = cols_extend)
+
+    # Recalculate crop yields
+    crop_recal = prod/area
+    crop_recal[crop.isna()] = np.nan
+
+    # Round off to the third decimal point
+    crop = crop.round(3)
+    crop_recal = crop_recal.round(3)
+
+    # Replace with the recalculated crop yields
+    number_replacement = sum(~np.isnan(crop.values[crop != crop_recal]))
+    crop[crop != crop_recal] = crop_recal[crop != crop_recal]
+
+    # Reform to pivot-table format
+    area = area.T
+    area['indicator'] = 'area'
+    area = area.set_index('indicator', append=True).T
+    prod = prod.T
+    prod['indicator'] = 'production'
+    prod = prod.set_index('indicator', append=True).T
+    crop = crop.T
+    crop['indicator'] = 'yield'
+    crop = crop.set_index('indicator', append=True).T
+    merged = pd.concat([area,prod,crop],axis=1)
+    table = merged.reindex(columns = merged.columns.sortlevel([0])[0])
+    data = table.T.stack().reset_index().rename(columns={0:'value'})
+    # ---------------------------------------------------- #
+
     data['year'] = data['harvest_year']
     data.rename(columns={'season_name':'season', 'indicator':'variable'}, inplace=True)
     data = data[['fnid','product','season','year','variable','value']]
@@ -143,7 +196,7 @@ def generate_viewer_sim():
     # Merge all
     stack_crop = pd.concat([container_obs, crop_area], axis=0).reset_index(drop=True)
     stack_crop['type'] = 'crop'
-    # -------------------------------------------------- #
+    # ================================================== #
     
     
     # Generate a CSV file with specific variables ------ #
@@ -159,7 +212,7 @@ def generate_viewer_sim():
     stack_forecast = stack_forecast.rename(columns={
         'ADMIN1':'admin1',
         'ADMIN2':'admin2',
-        'season_name':'season',
+        'season_name':'season', 
         'pred':'out-of-sample'
     })
     stack_forecast['out-of-sample'].replace({'obs':np.nan,'hcst':0,'fcst':1,'rcst':2},inplace=True)
@@ -246,6 +299,10 @@ def generate_viewer_sim():
     fn_out = '/home/chc-data-out/people/dlee/viewer/viewer_data.csv'
     df_merged.to_csv(fn_out)
     print('%s is saved.' % fn_out)
+    # EO data coverage
+    src = '/home/donghoonlee/chafs_roi/data_in/eodata_coverage.txt'
+    dst = '/home/chc-data-out/people/dlee/viewer/eodata_coverage.txt'
+    shutil.copyfile(src, dst)
     # -------------------------------------------------- #
     
     # Check Country-Product-Season-Model --------------- #

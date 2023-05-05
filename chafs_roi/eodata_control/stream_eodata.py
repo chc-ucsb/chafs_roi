@@ -262,7 +262,7 @@ def stream_eodata():
     # ETOS-NOAA ======================================= #
     # a) Mirror NetCDF files from NOAA FTP server to "ndvi_emodis"
     print('#','='*50,'#')
-    print('MAX TEMP-NOAA-CPC')
+    print('ETos-NOAA-CPC')
     command = 'wget -m -nd -A "ETos_fine_*.nc" -R ".listing" ftp://ftp.cdc.noaa.gov/Projects/RefET/global/Gen-0/fine_resolution/data_v2/ -P /home/chc-sandbox/people/dlee/etos_noaa/ -q --show-progress'
     print(command)
     run_command(command)
@@ -318,6 +318,7 @@ def stream_eodata():
         fn_smos = dir_dst + 'africa/SoilMoi00_10cm_tavg_{:04d}{:02d}.nc'.format(year,month)
         fn_stmp = dir_dst + 'africa/SoilTemp00_10cm_tavg_{:04d}{:02d}.nc'.format(year,month)
         fn_atmp = dir_dst + 'africa/Tair_f_tavg_{:04d}{:02d}.nc'.format(year,month)
+        fn_flow = dir_dst + 'africa/Qs_tavg_{:04d}{:02d}.nc'.format(year,month)
         if all([os.path.exists(fn) for fn in [fn_smos, fn_stmp, fn_atmp]]): continue
         sub = xr.open_dataset(fn_src).sel(Y=slice(-40,40), X=slice(-20,55))
         if not os.path.exists(fn_smos):
@@ -326,6 +327,8 @@ def stream_eodata():
             sub['SoilTemp00_10cm_tavg'].to_netcdf(fn_stmp); print('%s is saved.' % fn_stmp)
         if not os.path.exists(fn_atmp):
             sub['Tair_f_tavg'].to_netcdf(fn_atmp); print('%s is saved.' % fn_atmp)
+        if not os.path.exists(fn_flow):
+            sub['Qs_tavg'].to_netcdf(fn_atmp); print('%s is saved.' % fn_atmp)
             
     print('#','='*50,'#')
     print('')

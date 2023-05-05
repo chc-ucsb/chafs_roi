@@ -59,6 +59,7 @@ def Reforecast_by_FNID(fnid, product_name, season_name, indicator_name, model_na
     tdx = y.index
     tdx_test = box['fcst'].index
     y_test = y[tdx_test]
+    y_raw_test = y_raw[tdx_test]
     harvest_month = box['harvest_month']
     datemat = box['datemat']
     # - Forecast results
@@ -156,8 +157,10 @@ def Reforecast_by_FNID(fnid, product_name, season_name, indicator_name, model_na
     lead_rcst_dt = lead_rcst.copy()
     if isTrend:
         # Retrending
+        lead_hcst = lead_hcst + trend.predict(np.array(tdx.year)[:,None])[:,None] - y.mean()
+        lead_fcst = lead_fcst + trend.predict(np.array(tdx_test.year)[:,None])[:,None] - y.mean()
         lead_rcst = lead_rcst + trend.predict(np.array(ftt.index.year)[:,None])[:,None] - y.mean()
-
+        
     # Low and High prediction interavals
     lead_hcst_low = lead_hcst.copy()
     lead_hcst_high = lead_hcst.copy()
@@ -178,14 +181,14 @@ def Reforecast_by_FNID(fnid, product_name, season_name, indicator_name, model_na
     lead_rcst_high.loc[tdx_all,lead] = lead_rcst.loc[tdx_all,lead] + lead_rcst_esm[lead].std(1)
 
     # Forecast errors (observed - forecasted)
-    lead_hcst_error = y.values[:,None] - lead_hcst
-    lead_fcst_error = y_test.values[:,None] - lead_fcst
+    lead_hcst_error = y_raw.values[:,None] - lead_hcst
+    lead_fcst_error = y_raw_test.values[:,None] - lead_fcst
 
     # Reorder forecasts by better & earlier lead-time
-    nse_hcst = lead_hcst.apply(lambda x: mt.msess(y, x, y.mean()), axis=0)/100
-    nse_fcst = lead_fcst.apply(lambda x: mt.msess(y_test, x, y.mean()), axis=0)/100
-    mape_hcst = lead_hcst.apply(lambda x: mean_absolute_percentage_error(y, x), axis=0)
-    mape_fcst = lead_fcst.apply(lambda x: mean_absolute_percentage_error(y_test, x), axis=0)
+    nse_hcst = lead_hcst.apply(lambda x: mt.msess(y_raw, x, y_raw.mean()), axis=0)/100
+    nse_fcst = lead_fcst.apply(lambda x: mt.msess(y_raw_test, x, y_raw.mean()), axis=0)/100
+    mape_hcst = lead_hcst.apply(lambda x: mean_absolute_percentage_error(y_raw, x), axis=0)
+    mape_fcst = lead_fcst.apply(lambda x: mean_absolute_percentage_error(y_raw_test, x), axis=0)
     score = pd.concat([nse_hcst, nse_fcst, 
                        mape_hcst, mape_fcst
                       ], axis=1, 

@@ -25,129 +25,129 @@ def generate_viewer_com():
     fnids_dict = fnids_info.groupby('country_iso')['fnid'].apply(lambda x: x.unique().tolist()).to_dict()
     # -------------------------------------------------- #
     
-#     # (1) Reforecast all years ------------------------- #
-#     # In order to run multiprocessing codes on Ipython, we need to make a function of main work
-#     # (Source: https://medium.com/@grvsinghal/speed-up-your-python-code-using-multiprocessing-on-windows-and-jupyter-or-ipython-2714b49d6fac)
-#     list_model = ['ET']
-#     cps = [
-#         ['Somalia','Sorghum','Deyr'],
-#         ['Somalia','Sorghum','Gu'],
-#         ['Somalia','Maize','Deyr'],
-#         ['Somalia','Maize','Gu'],
-#         ['Malawi','Maize','Main'],
-#         ['Kenya','Maize','Long'],
-#         ['Kenya','Maize','Short'],
-#         ['Burkina Faso','Maize','Main'],
-#         # ['Burkina Faso','Sorghum','Main']
-#     ]
-#     comb = product(cps, list_model)
-#     stime = time.time()
-#     for (country_name, product_name, season_name), model_name in comb:
-#         country_iso = country_code[country_name]
-#         leadmat = [18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
-#         print('%s-%s-%s-%s' % (country_name, product_name, season_name, model_name))
+    # (1) Reforecast all years ------------------------- #
+    # In order to run multiprocessing codes on Ipython, we need to make a function of main work
+    # (Source: https://medium.com/@grvsinghal/speed-up-your-python-code-using-multiprocessing-on-windows-and-jupyter-or-ipython-2714b49d6fac)
+    list_model = ['ET']
+    cps = [
+        ['Somalia','Sorghum','Deyr'],
+        ['Somalia','Sorghum','Gu'],
+        ['Somalia','Maize','Deyr'],
+        ['Somalia','Maize','Gu'],
+        ['Malawi','Maize','Main'],
+        ['Kenya','Maize','Long'],
+        ['Kenya','Maize','Short'],
+        ['Burkina Faso','Maize','Main'],
+        # ['Burkina Faso','Sorghum','Main']
+    ]
+    comb = product(cps, list_model)
+    stime = time.time()
+    for (country_name, product_name, season_name), model_name in comb:
+        country_iso = country_code[country_name]
+        leadmat = [18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
+        print('%s-%s-%s-%s' % (country_name, product_name, season_name, model_name))
 
-#         # Basic parameters
-#         indicator_name = 'yield'
-#         lead_dkd = 'all'
-#         flag_dekad = True
-#         flag_ext = True
-#         flag_serial = True
-#         isPower = False
-#         isTrend = True
-#         exp_name = 'YFT_INDV_ALL'
-#         note = ''
+        # Basic parameters
+        indicator_name = 'yield'
+        lead_dkd = 'all'
+        flag_dekad = True
+        flag_ext = True
+        flag_serial = True
+        isPower = False
+        isTrend = True
+        exp_name = 'YFT_INDV_ALL'
+        note = ''
 
-#         # Remove the missing FNIDS
-#         fn_format = './data_out/ccfs/ccfs_{:s}_{:s}_{:s}_{:s}_{:s}.npz'
-#         fnids_exists = [fnid for fnid in fnids_dict[country_iso] if 
-#                         os.path.exists(fn_format.format(fnid, product_name, season_name, model_name, exp_name))]
+        # Remove the missing FNIDS
+        fn_format = './data_out/ccfs/ccfs_{:s}_{:s}_{:s}_{:s}_{:s}.npz'
+        fnids_exists = [fnid for fnid in fnids_dict[country_iso] if 
+                        os.path.exists(fn_format.format(fnid, product_name, season_name, model_name, exp_name))]
 
-#         # Initial parameters
-#         obox = dict()
-#         box_y = {fnid: [] for fnid in fnids_exists}
-#         box_y_dt = {fnid: [] for fnid in fnids_exists}
-#         box_ssorder = pd.DataFrame(index=fnids_exists, columns=leadmat, dtype=np.float32).rename_axis(index='fnid', columns="lead")
-#         box_nse_hcst = box_ssorder.copy()
-#         box_nse_fcst = box_ssorder.copy()
-#         box_mape_hcst = box_ssorder.copy()
-#         box_mape_fcst = box_ssorder.copy()
-#         box_hcst = {fnid: [] for fnid in fnids_exists}
-#         box_hcst_error = {fnid: [] for fnid in fnids_exists}
-#         box_hcst_low = {fnid: [] for fnid in fnids_exists}
-#         box_hcst_high = {fnid: [] for fnid in fnids_exists}
-#         box_fcst = {fnid: [] for fnid in fnids_exists}
-#         box_fcst_error = {fnid: [] for fnid in fnids_exists}
-#         box_fcst_low = {fnid: [] for fnid in fnids_exists}
-#         box_fcst_high = {fnid: [] for fnid in fnids_exists}
-#         box_rcst = {fnid: [] for fnid in fnids_exists}
-#         box_rcst_dt = {fnid: [] for fnid in fnids_exists}
-#         box_rcst_low = {fnid: [] for fnid in fnids_exists}
-#         box_rcst_high = {fnid: [] for fnid in fnids_exists}
+        # Initial parameters
+        obox = dict()
+        box_y = {fnid: [] for fnid in fnids_exists}
+        box_y_dt = {fnid: [] for fnid in fnids_exists}
+        box_ssorder = pd.DataFrame(index=fnids_exists, columns=leadmat, dtype=np.float32).rename_axis(index='fnid', columns="lead")
+        box_nse_hcst = box_ssorder.copy()
+        box_nse_fcst = box_ssorder.copy()
+        box_mape_hcst = box_ssorder.copy()
+        box_mape_fcst = box_ssorder.copy()
+        box_hcst = {fnid: [] for fnid in fnids_exists}
+        box_hcst_error = {fnid: [] for fnid in fnids_exists}
+        box_hcst_low = {fnid: [] for fnid in fnids_exists}
+        box_hcst_high = {fnid: [] for fnid in fnids_exists}
+        box_fcst = {fnid: [] for fnid in fnids_exists}
+        box_fcst_error = {fnid: [] for fnid in fnids_exists}
+        box_fcst_low = {fnid: [] for fnid in fnids_exists}
+        box_fcst_high = {fnid: [] for fnid in fnids_exists}
+        box_rcst = {fnid: [] for fnid in fnids_exists}
+        box_rcst_dt = {fnid: [] for fnid in fnids_exists}
+        box_rcst_low = {fnid: [] for fnid in fnids_exists}
+        box_rcst_high = {fnid: [] for fnid in fnids_exists}
 
-#         # Multiprocessing per district
-#         pool = mp.Pool(4)
-#         jobs = []
-#         for fnid in fnids_exists:
-#             bp = (
-#                 fnid, product_name, season_name, indicator_name, 
-#                 model_name, lead_dkd, flag_dekad, flag_ext, flag_serial, 
-#                 isPower, isTrend, exp_name, note
-#             )
-#             jobs.append(pool.apply_async(Reforecast_by_FNID, bp))
-#         pool.close()
-#         pool.join()
-#         output = [job.get() for job in jobs]
+        # Multiprocessing per district
+        pool = mp.Pool(4)
+        jobs = []
+        for fnid in fnids_exists:
+            bp = (
+                fnid, product_name, season_name, indicator_name, 
+                model_name, lead_dkd, flag_dekad, flag_ext, flag_serial, 
+                isPower, isTrend, exp_name, note
+            )
+            jobs.append(pool.apply_async(Reforecast_by_FNID, bp))
+        pool.close()
+        pool.join()
+        output = [job.get() for job in jobs]
 
-#         # Store predicted values, errors, confidence intervals
-#         for ibox in output:
-#             fnid = ibox['fnid']
-#             box_y[fnid] = ibox['y']
-#             box_y_dt[fnid] = ibox['y_dt']
-#             box_ssorder.loc[fnid,:] = ibox['ssorder']
-#             box_nse_hcst.loc[fnid,:] = ibox['score'].loc['nse_hcst']
-#             box_nse_fcst.loc[fnid,:] = ibox['score'].loc['nse_fcst']
-#             box_mape_hcst.loc[fnid,:] = ibox['score'].loc['mape_hcst']
-#             box_mape_fcst.loc[fnid,:] = ibox['score'].loc['mape_fcst']
-#             box_hcst[fnid] = ibox['hcst']
-#             box_hcst_error[fnid] = ibox['hcst_error']
-#             box_hcst_low[fnid] = ibox['hcst_low']
-#             box_hcst_high[fnid] = ibox['hcst_high']
-#             box_fcst[fnid] = ibox['fcst']
-#             box_fcst_error[fnid] = ibox['fcst_error']
-#             box_fcst_low[fnid] = ibox['fcst_low']
-#             box_fcst_high[fnid] = ibox['fcst_high']
-#             box_rcst[fnid] = ibox['rcst']
-#             box_rcst_dt[fnid] = ibox['rcst_dt']
-#             box_rcst_low[fnid] = ibox['rcst_low']
-#             box_rcst_high[fnid] = ibox['rcst_high']
+        # Store predicted values, errors, confidence intervals
+        for ibox in output:
+            fnid = ibox['fnid']
+            box_y[fnid] = ibox['y']
+            box_y_dt[fnid] = ibox['y_dt']
+            box_ssorder.loc[fnid,:] = ibox['ssorder']
+            box_nse_hcst.loc[fnid,:] = ibox['score'].loc['nse_hcst']
+            box_nse_fcst.loc[fnid,:] = ibox['score'].loc['nse_fcst']
+            box_mape_hcst.loc[fnid,:] = ibox['score'].loc['mape_hcst']
+            box_mape_fcst.loc[fnid,:] = ibox['score'].loc['mape_fcst']
+            box_hcst[fnid] = ibox['hcst']
+            box_hcst_error[fnid] = ibox['hcst_error']
+            box_hcst_low[fnid] = ibox['hcst_low']
+            box_hcst_high[fnid] = ibox['hcst_high']
+            box_fcst[fnid] = ibox['fcst']
+            box_fcst_error[fnid] = ibox['fcst_error']
+            box_fcst_low[fnid] = ibox['fcst_low']
+            box_fcst_high[fnid] = ibox['fcst_high']
+            box_rcst[fnid] = ibox['rcst']
+            box_rcst_dt[fnid] = ibox['rcst_dt']
+            box_rcst_low[fnid] = ibox['rcst_low']
+            box_rcst_high[fnid] = ibox['rcst_high']
 
-#         # Save values
-#         obox['box_fnids'] = fnids_exists
-#         obox['box_y'] = box_y
-#         obox['box_y_dt'] = box_y_dt
-#         obox['box_ssorder'] = box_ssorder
-#         obox['box_nse_hcst'] = box_nse_hcst
-#         obox['box_nse_fcst'] = box_nse_fcst
-#         obox['box_mape_hcst'] = box_mape_hcst
-#         obox['box_mape_fcst'] = box_mape_fcst
-#         obox['box_hcst'] = box_hcst
-#         obox['box_hcst_error'] = box_hcst_error
-#         obox['box_hcst_low'] = box_hcst_low
-#         obox['box_hcst_high'] = box_hcst_high
-#         obox['box_fcst'] = box_fcst
-#         obox['box_fcst_error'] = box_fcst_error
-#         obox['box_fcst_low'] = box_fcst_low
-#         obox['box_fcst_high'] = box_fcst_high
-#         obox['box_rcst'] = box_rcst
-#         obox['box_rcst_dt'] = box_rcst_dt
-#         obox['box_rcst_low'] = box_rcst_low
-#         obox['box_rcst_high'] = box_rcst_high
-#         fn_out = './result/ccfs_reforecast_%s_%s_%s_%s_%s.npz' % (country_iso, product_name, season_name, model_name, exp_name)
-#         np.savez_compressed(fn_out, obox=obox)
-#         print('%s is saved.' % fn_out)
-#     print('%.1fs took' % (time.time() - stime))
-#     # -------------------------------------------------- #
+        # Save values
+        obox['box_fnids'] = fnids_exists
+        obox['box_y'] = box_y
+        obox['box_y_dt'] = box_y_dt
+        obox['box_ssorder'] = box_ssorder
+        obox['box_nse_hcst'] = box_nse_hcst
+        obox['box_nse_fcst'] = box_nse_fcst
+        obox['box_mape_hcst'] = box_mape_hcst
+        obox['box_mape_fcst'] = box_mape_fcst
+        obox['box_hcst'] = box_hcst
+        obox['box_hcst_error'] = box_hcst_error
+        obox['box_hcst_low'] = box_hcst_low
+        obox['box_hcst_high'] = box_hcst_high
+        obox['box_fcst'] = box_fcst
+        obox['box_fcst_error'] = box_fcst_error
+        obox['box_fcst_low'] = box_fcst_low
+        obox['box_fcst_high'] = box_fcst_high
+        obox['box_rcst'] = box_rcst
+        obox['box_rcst_dt'] = box_rcst_dt
+        obox['box_rcst_low'] = box_rcst_low
+        obox['box_rcst_high'] = box_rcst_high
+        fn_out = './result/ccfs_reforecast_%s_%s_%s_%s_%s.npz' % (country_iso, product_name, season_name, model_name, exp_name)
+        np.savez_compressed(fn_out, obox=obox)
+        print('%s is saved.' % fn_out)
+    print('%.1fs took' % (time.time() - stime))
+    # -------------------------------------------------- #
     
     
     # (2) Extract crop data ---------------------------- #
@@ -166,14 +166,14 @@ def generate_viewer_com():
     country_to_use = list(np.unique(np.array(cps)[:,0]))
 
     # Load FEWSNET admin boundaries
-    shape = gpd.read_file('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.json').drop(columns='id')
-    shape = shape[shape.ADMIN0.isin(country_to_use)].reset_index(drop=True)
+    shape = gpd.read_file('/home/donghoonlee/chafs_roi/data/gscd_shape_stable.json').drop(columns='id')
+    # shape = shape[shape.ADMIN0.isin(country_to_use)].reset_index(drop=True)
     dist_info = shape[['FNID','ADMIN0','ADMIN1','ADMIN2']]
     dist_info.columns = ['fnid','country','admin1','admin2']
     column_order = ['fnid','country','admin1','admin2','year','product','season','month','dekad','day','out-of-sample','variable','value']
 
     # Load crop area, production, yield data
-    df = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_data_stable.csv', index_col=0)
+    df = pd.read_csv('/home/donghoonlee/chafs_roi/data/gscd_data_stable.csv', index_col=0)
     # Reduce data according to CPS
     container = []
     for country_name, product_name, season_name in cps:
@@ -184,7 +184,61 @@ def generate_viewer_com():
                 (df['gscd_code'] == 'calibrated')
         ]
         container.append(sub)
-    data = pd.concat(container, axis=0).reset_index(drop=True)
+    df = pd.concat(container, axis=0).reset_index(drop=True)
+
+    # Pivot table format --------------------------------- #
+    area = df[df['indicator'] == 'area'].pivot_table(
+        index='harvest_year',
+        columns=['fnid','country','name','product','season_name','harvest_month'],         
+        values='value', aggfunc='sum'
+    )
+    prod = df[df['indicator'] == 'production'].pivot_table(
+        index='harvest_year',
+        columns=['fnid','country','name','product','season_name','harvest_month'],         
+        values='value', aggfunc='sum'
+    )
+    crop = df[df['indicator'] == 'yield'].pivot_table(
+        index='harvest_year',
+        columns=['fnid','country','name','product','season_name','harvest_month'],         
+        values='value', aggfunc='sum'
+    )
+    # Extend columns
+    area_cols = area.columns.to_frame().reset_index(drop=True)
+    prod_cols = prod.columns.to_frame().reset_index(drop=True)
+    crop_cols = crop.columns.to_frame().reset_index(drop=True)
+    cols_extend = pd.concat([area_cols, prod_cols, crop_cols],axis=0).drop_duplicates().reset_index(drop=True)
+    cols_extend = pd.MultiIndex.from_frame(cols_extend)
+    area = area.reindex(columns = cols_extend)
+    prod = prod.reindex(columns = cols_extend)
+    crop = crop.reindex(columns = cols_extend)
+
+    # Recalculate crop yields
+    crop_recal = prod/area
+    crop_recal[crop.isna()] = np.nan
+
+    # Round off to the third decimal point
+    crop = crop.round(3)
+    crop_recal = crop_recal.round(3)
+
+    # Replace with the recalculated crop yields
+    number_replacement = sum(~np.isnan(crop.values[crop != crop_recal]))
+    crop[crop != crop_recal] = crop_recal[crop != crop_recal]
+
+    # Reform to pivot-table format
+    area = area.T
+    area['indicator'] = 'area'
+    area = area.set_index('indicator', append=True).T
+    prod = prod.T
+    prod['indicator'] = 'production'
+    prod = prod.set_index('indicator', append=True).T
+    crop = crop.T
+    crop['indicator'] = 'yield'
+    crop = crop.set_index('indicator', append=True).T
+    merged = pd.concat([area,prod,crop],axis=1)
+    table = merged.reindex(columns = merged.columns.sortlevel([0])[0])
+    data = table.T.stack().reset_index().rename(columns={0:'value'})
+    # ---------------------------------------------------- #
+
     data['year'] = data['harvest_year']
     data.rename(columns={'season_name':'season', 'indicator':'variable'}, inplace=True)
     data = data[['fnid','product','season','year','variable','value']]

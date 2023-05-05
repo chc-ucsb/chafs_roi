@@ -613,6 +613,15 @@ def PlotScoreMap(score, geojson, country_name, footnote):
     lead_month = score[['lead','month']].drop_duplicates()
     lead_month['monthL'] = lead_month['month'].apply(lambda x: pd.to_datetime('2000-%02d-01' % x).strftime('%b'))
     months = list(lead_month['monthL'].values)
+    # Colormap (with negative) -------- #
+    cs = px.colors.sequential.Cividis_r
+    ccs=[
+        (0,'#ffedfe'),(0.000001,'#ffedfe'),
+        (0.000001,cs[0]),
+        (0.1/0.9,cs[1]),(0.2/0.9,cs[2]),(0.3/0.9,cs[3]),
+        (0.4/0.9,cs[4]),(0.5/0.9,cs[5]),(0.6/0.9,cs[6]),
+        (0.7/0.9,cs[7]),(0.8/0.9,cs[8]),(0.9/0.9,cs[9])
+    ]
     # Skill score maps ----------------------- #
     rows, cols, scale = 2, 5, 1.2
     if country_name == 'Kenya': width, height, lims = 180*cols*scale, 220*rows*scale, np.array([33.8,41.9,-4.7,5.5]); cb_len=0.7
@@ -662,8 +671,9 @@ def PlotScoreMap(score, geojson, country_name, footnote):
         margin={"r":0,"t":20,"l":0,"b":20},
         font = {'family':'arial','size':16, 'color':'black'},
         coloraxis1=dict(
-            colorscale=px.colors.sequential.Cividis,
-            reversescale=True,
+            # colorscale=px.colors.sequential.Cividis_r,
+            colorscale=ccs,
+            reversescale=False,
             cmin=0,
             cmax=1.0,
             colorbar = dict(
@@ -701,6 +711,14 @@ def PlotScoreMap(score, geojson, country_name, footnote):
         showarrow=False,
         font = {'family':'arial','size':15, 'color':'dimgrey'},
     )
+    fig.add_annotation(
+        xref="paper", yref="paper",
+        x=1., y=-.04,
+        text='(Light pink denotes negative NSE values)',
+        align="right",
+        showarrow=False,
+        font = {'family':'arial','size':15, 'color':'dimgrey'},
+    )
     return fig
 
     
@@ -709,6 +727,16 @@ def PlotScoreHeatmap(score, footnote):
     lead_month = score[['lead','month']].drop_duplicates()
     lead_month['monthL'] = lead_month['month'].apply(lambda x: pd.to_datetime('2000-%02d-01' % x).strftime('%b'))
     months = lead_month['monthL']
+    # Colormap (with negative) -------- #
+    cs = px.colors.sequential.Cividis_r
+    ccs=[
+        (0,'#ffedfe'),(0.000001,'#ffedfe'),
+        (0.000001,cs[0]),
+        (0.1/0.9,cs[1]),(0.2/0.9,cs[2]),(0.3/0.9,cs[3]),
+        (0.4/0.9,cs[4]),(0.5/0.9,cs[5]),(0.6/0.9,cs[6]),
+        (0.7/0.9,cs[7]),(0.8/0.9,cs[8]),(0.9/0.9,cs[9])
+    ]
+    # --------------------------------- # 
     # Skill Score Heatmap ------------- #
     nse = score[score['variable']=='yield_nse'].pivot_table(index='fnid',columns='lead',values='value')
     mape = score[score['variable']=='yield_mape'].pivot_table(index='fnid',columns='lead',values='value')
@@ -743,7 +771,7 @@ def PlotScoreHeatmap(score, footnote):
             tickfont = {'family':'arial','size':14, 'color':'black'},
         ),
         coloraxis1=dict(
-            colorscale='Cividis_r',
+            colorscale=ccs,
             cmin=0,
             cmax=1.0,
             colorbar = dict(
@@ -795,6 +823,14 @@ def PlotScoreHeatmap(score, footnote):
         xref="paper", yref="paper",
         x=0, y=-.065,
         text=footnote,
+        align="right",
+        showarrow=False,
+        font = {'family':'arial','size':15, 'color':'dimgrey'},
+    )
+    fig.add_annotation(
+        xref="paper", yref="paper",
+        x=1., y=-.065,
+        text='(Light pink denotes negative NSE values)',
         align="right",
         showarrow=False,
         font = {'family':'arial','size':15, 'color':'dimgrey'},

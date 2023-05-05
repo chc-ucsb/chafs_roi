@@ -21,13 +21,16 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 
 
 def ExtractAdmPRCP_chirps(year, fnid_dict):
-    # -------------------------------------------------------- #
-    # This is used for early CHIRPS estmiates on 2022 Oct...
-    if year != 2022:
-        fn_data = '/home/chc-data-out/products/CHIRPS-2.0/global_daily/netcdf/p05/chirps-v2.0.{:04d}.days_p05.nc'
-    else:
-        fn_data = '/home/chc-data-out/people/dlee/chirps-v2.0.{:04d}.days_p05.nc'
-    # -------------------------------------------------------- #
+    
+    # print(year)
+    
+    # # -------------------------------------------------------- #
+    # # This is used for early CHIRPS estmiates on 2022 Oct...
+    # if year != 2022:
+    #     fn_data = '/home/chc-data-out/products/CHIRPS-2.0/global_daily/netcdf/p05/chirps-v2.0.{:04d}.days_p05.nc'
+    # else:
+    #     fn_data = '/home/chc-data-out/people/dlee/chirps-v2.0.{:04d}.days_p05.nc'
+    # # -------------------------------------------------------- #
     fn_data = '/home/chc-data-out/products/CHIRPS-2.0/global_daily/netcdf/p05/chirps-v2.0.{:04d}.days_p05.nc'
     
     infile = sorted(glob.glob(fn_data.format(year)))
@@ -38,8 +41,8 @@ def ExtractAdmPRCP_chirps(year, fnid_dict):
     date = pd.to_datetime(data.variables['time'].values)
 
     # Remove existing files
-    filn_out_crop = '/home/dlee/chafs/data/eodata/prcp_chirps-v2/adm.prcp.chirps-v2.crop.{:04d}.{:02d}.{:02d}.hdf'
-    filn_out_all = '/home/dlee/chafs/data/eodata/prcp_chirps-v2/adm.prcp.chirps-v2.all.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_crop = '/home/donghoonlee/chafs/data/eodata/prcp_chirps-v2/adm.prcp.chirps-v2.crop.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_all = '/home/donghoonlee/chafs/data/eodata/prcp_chirps-v2/adm.prcp.chirps-v2.all.{:04d}.{:02d}.{:02d}.hdf'
     fn_out_crop = [filn_out_crop.format(dt.year, dt.month, dt.day) for dt in date]
     fn_out_all = [filn_out_all.format(dt.year, dt.month, dt.day) for dt in date]
     date_retain_crop = [not os.path.exists(filn) for filn in fn_out_crop]
@@ -50,22 +53,35 @@ def ExtractAdmPRCP_chirps(year, fnid_dict):
     fn_out_all = list(compress(fn_out_all, date_retain))
     if len(fn_out_crop) == 0: return
 
+    print('Process check point - 1')
+
     # Resample cropland data
-    fn_cropland = '/home/dlee/chafs/data/cropland/Hybrid_10042015v9.img'
+    fn_cropland = '/home/donghoonlee/chafs/data/cropland/Hybrid_10042015v9.img'
     fn_sample = '/home/chc-data-out/products/CHIRPS-2.0/global_daily/netcdf/p05/chirps-v2.0.1981.days_p05.nc'
     cropland = RasterResampling(fn_cropland, fn_sample).flatten()
 
+    print('Process check point - 2')
+    
     # Load the reduced raster indicies
-    with open('/home/dlee/chafs/data/eodata/rdx.adm.prcp.chirps-v2.pickle', 'rb') as f:
+    with open('/home/donghoonlee/chafs/data/eodata/rdx.adm.prcp.chirps-v2.pickle', 'rb') as f:
         rdx_reduced = cPickle.load(f)
+        
+    print('Process check point - 3')
 
     # Load data from NetCDF files
-    data = xr.open_mfdataset(infile, combine='by_coords', parallel=True)
+    data = xr.open_mfdataset(infile, combine='by_coords', chunks=100)
+    print('Process check point - 3.1')
     data = data.loc[dict(time = date)]
+    print('Process check point - 3.2')
     nlat, nlon, ntim = data.dims['latitude'], data.dims['longitude'], data.dims['time']
+    print('Process check point - 3.3')
     tim = data.time.values
-    data = data.variables['precip'].values
+    print('Process check point - 3.4')
+    data = data['precip'].values
+    print('Process check point - 3.5')
     data = data.reshape([ntim,nlat*nlon])
+    
+    print('Process check point - 4')
 
     # Aggregate to administrative units
     data_adm_crop = pd.DataFrame(index=tim, columns=fnid_dict.keys())
@@ -102,6 +118,8 @@ def ExtractAdmPRCP_chirps(year, fnid_dict):
     # Replace ID to FNID
     data_adm_crop = data_adm_crop.rename(fnid_dict,axis=1)
     data_adm_all = data_adm_all.rename(fnid_dict,axis=1)
+    
+    print('Process check point - 5')
 
     # Save files
     for i, t in enumerate(tim):
@@ -110,13 +128,14 @@ def ExtractAdmPRCP_chirps(year, fnid_dict):
         
     print('%d is finished..' % year)
 
+
     return
 
 
 def prcp_chirps():
     # Load both admin1 and admin2 boundaries
-    adm1 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm1_glob.shp')
-    adm2 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm2_glob.shp')
+    adm1 = gpd.read_file('/home/donghoonlee/chafs/data/shapefile/adm1_glob.shp')
+    adm2 = gpd.read_file('/home/donghoonlee/chafs/data/shapefile/adm2_glob.shp')
     adm = pd.concat([adm1, adm2], axis=0).reset_index(drop=True)
     # Select African countries
     world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
@@ -130,7 +149,7 @@ def prcp_chirps():
     fnid_dict = shape_adm[['ID','FNID']].set_index('ID').to_dict()['FNID']
 
     # Rasterize administrative boudaries
-    fn_rdx_out = '/home/dlee/chafs/data/eodata/rdx.adm.prcp.chirps-v2.pickle'
+    fn_rdx_out = '/home/donghoonlee/chafs/data/eodata/rdx.adm.prcp.chirps-v2.pickle'
     if False:
         fn_sample = '/home/chc-data-out/products/CHIRPS-2.0/global_daily/netcdf/p05/chirps-v2.0.1981.days_p05.nc'
         data_sample = xr.open_dataset(fn_sample)
@@ -144,11 +163,16 @@ def prcp_chirps():
 
 
     stime = time.time()
-    args = ((year, fnid_dict) for year in np.arange(1981, 2023))
-    with Pool(processes=8) as pool:
-        pool.starmap(ExtractAdmPRCP_chirps, args)
-        pool.close()
-        pool.join()
+    
+    # args = ((year, fnid_dict) for year in np.arange(1981, 2024))
+    # with Pool(processes=4) as pool:
+    #     pool.starmap(ExtractAdmPRCP_chirps, args)
+    #     pool.close()
+    #     pool.join()
+    
+    for year in np.arange(1981, 2024):
+        ExtractAdmPRCP_chirps(year, fnid_dict)
+
     print(time.time() - stime)
 
     return

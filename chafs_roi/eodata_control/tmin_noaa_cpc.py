@@ -30,8 +30,8 @@ def ExtractAdmTMIN_noaa(year, fnid_dict):
     date = pd.to_datetime([os.path.split(filn)[1][-13:-3] for filn in infile])
 
     # Remove existing files
-    filn_out_crop = '/home/dlee/chafs/data/eodata/tmin_noaa-cpc/adm.tmin.noaa-cpc.crop.{:04d}.{:02d}.{:02d}.hdf'
-    filn_out_all = '/home/dlee/chafs/data/eodata/tmin_noaa-cpc/adm.tmin.noaa-cpc.all.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_crop = '/home/donghoonlee/chafs/data/eodata/tmin_noaa-cpc/adm.tmin.noaa-cpc.crop.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_all = '/home/donghoonlee/chafs/data/eodata/tmin_noaa-cpc/adm.tmin.noaa-cpc.all.{:04d}.{:02d}.{:02d}.hdf'
     fn_out_crop = [filn_out_crop.format(dt.year, dt.month, dt.day) for dt in date]
     fn_out_all = [filn_out_all.format(dt.year, dt.month, dt.day) for dt in date]
     date_retain_crop = [not os.path.exists(filn) for filn in fn_out_crop]
@@ -44,16 +44,16 @@ def ExtractAdmTMIN_noaa(year, fnid_dict):
     if len(fn_out_crop) == 0: return
 
     # Resample cropland data
-    fn_cropland = '/home/dlee/chafs/data/cropland/Hybrid_10042015v9.img'
+    fn_cropland = '/home/donghoonlee/chafs/data/cropland/Hybrid_10042015v9.img'
     fn_sample = '/home/chc-sandbox/people/dlee/temp_noaa-cpc/tmin.noaa-cpc.1979.01.01.nc'
     cropland = RasterResampling(fn_cropland, fn_sample).flatten()
 
     # Load the reduced raster indicies
-    with open('/home/dlee/chafs/data/eodata/rdx.adm.tmax.noaa-cpc.pickle', 'rb') as f:
+    with open('/home/donghoonlee/chafs/data/eodata/rdx.adm.tmax.noaa-cpc.pickle', 'rb') as f:
         rdx_reduced = cPickle.load(f)
 
     # Load data from NetCDF files
-    data = xr.open_mfdataset(infile, combine='by_coords', parallel=True)
+    data = xr.open_mfdataset(infile, combine='by_coords', chunks=100)
     nlat, nlon, ntim = data.dims['lat'], data.dims['lon'], data.dims['time']
     tim = data.time.values
     data = data.variables['tmin'].values
@@ -107,8 +107,8 @@ def ExtractAdmTMIN_noaa(year, fnid_dict):
 
 def tmin_noaa_cpc():
     # Load both admin1 and admin2 boundaries
-    adm1 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm1_glob.shp')
-    adm2 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm2_glob.shp')
+    adm1 = gpd.read_file('/home/donghoonlee/chafs/data/shapefile/adm1_glob.shp')
+    adm2 = gpd.read_file('/home/donghoonlee/chafs/data/shapefile/adm2_glob.shp')
     adm = pd.concat([adm1, adm2], axis=0).reset_index(drop=True)
     # Select African countries
     world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
@@ -122,7 +122,7 @@ def tmin_noaa_cpc():
     fnid_dict = shape_adm[['ID','FNID']].set_index('ID').to_dict()['FNID']
 
     # Rasterize administrative boudaries
-    fn_rdx_out = '/home/dlee/chafs/data/eodata/rdx.adm.tmax.noaa-cpc.pickle'
+    fn_rdx_out = '/home/donghoonlee/chafs/data/eodata/rdx.adm.tmax.noaa-cpc.pickle'
     if False:
         fn_sample = '/home/chc-sandbox/people/dlee/temp_noaa-cpc/tmax.noaa-cpc.1979.01.01.nc'
         data_sample = xr.open_dataset(fn_sample)
@@ -135,14 +135,14 @@ def tmin_noaa_cpc():
     #     rdx_reduced = cPickle.load(f)
 
     # Remove and Re-extract recent data
-    files_rm = sorted(glob.glob('/home/dlee/chafs/data/eodata/tmin_noaa-cpc/adm.tmin.noaa-cpc.crop.????.*.hdf'))[-45:]
+    files_rm = sorted(glob.glob('/home/donghoonlee/chafs/data/eodata/tmin_noaa-cpc/adm.tmin.noaa-cpc.crop.????.*.hdf'))[-45:]
     if len(files_rm) > 0: 
         for file in files_rm: 
             os.remove(file)
 
     # Running
     stime = time.time()
-    args = ((year, fnid_dict) for year in np.arange(1979, 2023))
+    args = ((year, fnid_dict) for year in np.arange(1979, 2024))
     with Pool(processes=6) as pool:
         pool.starmap(ExtractAdmTMIN_noaa, args)
         pool.close()

@@ -21,7 +21,7 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 
 def ExtractAdmATMP_fldas(year, fnid_dict):
     # Get filenames
-    fn_data = '/home/chc-sandbox/people/dlee/fldas/africa/Tair_f_tavg_{:04d}??.nc'
+    fn_data = '/home/chc-sandbox/people/donghoonlee/fldas/africa/Tair_f_tavg_{:04d}??.nc'
     infile = sorted(glob.glob(fn_data.format(year)))
     if len(infile) == 0: return
 
@@ -29,8 +29,8 @@ def ExtractAdmATMP_fldas(year, fnid_dict):
     date = pd.to_datetime([os.path.split(filn)[1][-9:-3] for filn in infile], format='%Y%m')
 
     # Remove existing files
-    filn_out_crop = '/home/dlee/chafs/data/eodata/atmp_fldas/adm.atmp.fldas.crop.{:04d}.{:02d}.{:02d}.hdf'
-    filn_out_all = '/home/dlee/chafs/data/eodata/atmp_fldas/adm.atmp.fldas.all.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_crop = '/home/donghoonlee/chafs/data/eodata/atmp_fldas/adm.atmp.fldas.crop.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_all = '/home/donghoonlee/chafs/data/eodata/atmp_fldas/adm.atmp.fldas.all.{:04d}.{:02d}.{:02d}.hdf'
     fn_out_crop = [filn_out_crop.format(dt.year, dt.month, dt.day) for dt in date]
     fn_out_all = [filn_out_all.format(dt.year, dt.month, dt.day) for dt in date]
     date_retain_crop = [not os.path.exists(filn) for filn in fn_out_crop]
@@ -43,16 +43,16 @@ def ExtractAdmATMP_fldas(year, fnid_dict):
     if len(fn_out_crop) == 0: return
 
     # Resample cropland data
-    fn_cropland = '/home/dlee/chafs/data/cropland/Hybrid_10042015v9.img'
-    fn_sample ='/home/chc-sandbox/people/dlee/fldas/africa/Tair_f_tavg_198201.nc'
+    fn_cropland = '/home/donghoonlee/chafs/data/cropland/Hybrid_10042015v9.img'
+    fn_sample ='/home/chc-sandbox/people/donghoonlee/fldas/africa/Tair_f_tavg_198201.nc'
     cropland = RasterResampling(fn_cropland, fn_sample).flatten()
 
     # Load the reduced raster indicies
-    with open('/home/dlee/chafs/data/eodata/rdx.adm.smos.fldas.pickle', 'rb') as f:
+    with open('/home/donghoonlee/chafs/data/eodata/rdx.adm.smos.fldas.pickle', 'rb') as f:
         rdx_reduced = cPickle.load(f)
 
     # Load data from NetCDF files
-    data = xr.open_mfdataset(infile, combine='by_coords', parallel=True)
+    data = xr.open_mfdataset(infile, combine='by_coords', chunks=100)
     nlat, nlon, ntim = data.dims['Y'], data.dims['X'], data.dims['time']
     tim = data.time.values
     data = data.variables['Tair_f_tavg'].values
@@ -103,8 +103,8 @@ def ExtractAdmATMP_fldas(year, fnid_dict):
 
 def atmp_fldas():
     # Load both admin1 and admin2 boundaries
-    adm1 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm1_glob.shp')
-    adm2 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm2_glob.shp')
+    adm1 = gpd.read_file('/home/donghoonlee/chafs/data/shapefile/adm1_glob.shp')
+    adm2 = gpd.read_file('/home/donghoonlee/chafs/data/shapefile/adm2_glob.shp')
     adm = pd.concat([adm1, adm2], axis=0).reset_index(drop=True)
     # Select African countries
     world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
@@ -118,9 +118,9 @@ def atmp_fldas():
     fnid_dict = shape_adm[['ID','FNID']].set_index('ID').to_dict()['FNID']
 
     # Rasterize administrative boudaries
-    fn_rdx_out = '/home/dlee/chafs/data/eodata/rdx.adm.atmp.fldas.pickle'
+    fn_rdx_out = '/home/donghoonlee/chafs/data/eodata/rdx.adm.atmp.fldas.pickle'
     if False:
-        fn_sample ='/home/chc-sandbox/people/dlee/fldas/africa/Tair_f_tavg_198201.nc'
+        fn_sample ='/home/chc-sandbox/people/donghoonlee/fldas/africa/Tair_f_tavg_198201.nc'
         data_sample = xr.open_dataset(fn_sample)
         rdx_reduced = RasterizeAdminIndex(shape_adm, 'ID', data_sample['Tair_f_tavg'])
         assert len([k for k,v in rdx_reduced.items() if len(v) == 0]) == 0
@@ -132,14 +132,14 @@ def atmp_fldas():
 
 
 #     # Remove and Re-extract recent data
-#     files_rm = sorted(glob.glob('/home/dlee/chafs/data/eodata/atmp_fldas/adm.atmp.fldas.crop.????.??.??.hdf'))
+#     files_rm = sorted(glob.glob('/home/donghoonlee/chafs/data/eodata/atmp_fldas/adm.atmp.fldas.crop.????.??.??.hdf'))
 #     if len(files_rm) > 0: 
 #         for file in files_rm: 
 #             os.remove(file)
             
     # Running
     stime = time.time()
-    args = ((year, fnid_dict) for year in np.arange(1982, 2023))
+    args = ((year, fnid_dict) for year in np.arange(1982, 2024))
     with Pool(processes=8) as pool:
         pool.starmap(ExtractAdmATMP_fldas, args)
         pool.close()

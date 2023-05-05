@@ -25,7 +25,7 @@ def dekad2date(dkd, string=False):
     
     
 def MergeUpdateData(name):
-    path_chafs = '/home/dlee/chafs'
+    path_chafs = '/home/donghoonlee/chafs'
     if name == 'etos':
         filns_agg_all = sorted(glob.glob(path_chafs + '/data/eodata/etos_noaa/*.all.*.hdf'))
         filns_agg_crop = sorted(glob.glob(path_chafs + '/data/eodata/etos_noaa/*.crop.*.hdf'))
@@ -146,7 +146,7 @@ def LongTermDaily(df, years, method='mean'):
     
 def create_input_data():
     
-    path_chafs = '/home/dlee/chafs'
+    path_chafs = '/home/donghoonlee/chafs'
 
     # Load crop yield data ------------------- #
     # CPS (Country-Product-Season)
@@ -218,7 +218,7 @@ def create_input_data():
     for fnid in eviirs.columns:
         ev = eviirs[fnid]
         ev[ev <= 0.01] = np.nan
-        ev_std = ev.to_frame().apply(lambda x: StandardScaler().fit_transform(x[:,None]).squeeze()).squeeze()
+        ev_std = pd.Series(index=ev.index, data=StandardScaler().fit_transform(ev.values.reshape([-1,1])).squeeze())
         ev[ev_std.abs() > 3] = np.nan
         eviirs_clean[fnid] = ev
     ndvi_raw = pd.concat([avhrr_emodis_rcon, eviirs_clean], axis=0)
@@ -229,6 +229,8 @@ def create_input_data():
     # - etos starts at 1981-01-01
     # - ndvi starts at 1981-06-21
     # - tmax starts at 1979-01-01
+    prcp_v2_start, prcp_v2_end = prcp_chirps.index[0], prcp_chirps.index[-1]
+    prcp_v2p_start, prcp_v2p_end = prcp_chirps_p.index[0], prcp_chirps_p.index[-1]
     prcp_start, prcp_end = prcp.index[0], prcp.index[-1]
     etos_start, etos_end = etos.index[0], etos.index[-1]
     tmax_start, tmax_end = tmax.index[0], tmax.index[-1]
@@ -251,20 +253,6 @@ def create_input_data():
     else:
         ext = dekad_end.days_in_month
     dekad_end = pd.Timestamp(year=dekad_end.year, month=dekad_end.month, day=ext)
-
-    print('='*40)
-    print('Current EO data temporal coverage')
-    print('-'*40)
-    print('PRCP:\t%s to %s' % (prcp_start.strftime('%Y-%m-%d'), prcp_end.strftime('%Y-%m-%d')))
-    print('ETOS:\t%s to %s' % (etos_start.strftime('%Y-%m-%d'), etos_end.strftime('%Y-%m-%d')))
-    print('TEMP:\t%s to %s' % (tmax_start.strftime('%Y-%m-%d'), tmax_end.strftime('%Y-%m-%d')))
-    print('NDVI:\t%s to %s' % (ndvi_start.strftime('%Y-%m-%d'), ndvi_end.strftime('%Y-%m-%d')))
-    print('='*40)
-    print('Data extension')
-    print('-'*40)
-    print('Start:\t%s' % (dekad_start.strftime('%Y-%m-%d')))
-    print('End:\t%s' % (dekad_end.strftime('%Y-%m-%d')))
-    print('='*40)
 
     # EO data extension
     prcp = prcp.reindex(index=pd.date_range(dekad_start, dekad_end))
@@ -484,7 +472,6 @@ def create_input_data():
     variable_table = pd.DataFrame(variable_table, columns=['Name','Definition','Aggregation_method'])
     # ---------------------------------------- #
 
-
     # Exporting EO data ---------------------- #
     # Remove existing EO data files
     for file in glob.glob('./data_in/*_pred.hdf'): 
@@ -503,19 +490,23 @@ def create_input_data():
     # Temporal data coverage
     with open('./data_in/eodata_coverage.txt', 'w') as txt:
         print('='*40, file=txt)
-        print('Current EO data temporal coverage',file=txt)
-        print('-'*40,file=txt)
-        print('PRCP:\t%s to %s' % (prcp_start.strftime('%Y-%m-%d'), prcp_end.strftime('%Y-%m-%d')),file=txt)
-        print('ETOS:\t%s to %s' % (etos_start.strftime('%Y-%m-%d'), etos_end.strftime('%Y-%m-%d')),file=txt)
-        print('TEMP:\t%s to %s' % (tmax_start.strftime('%Y-%m-%d'), tmax_end.strftime('%Y-%m-%d')),file=txt)
-        print('NDVI:\t%s to %s' % (ndvi_start.strftime('%Y-%m-%d'), ndvi_end.strftime('%Y-%m-%d')),file=txt)
-        print('='*40,file=txt)
-        print('Data extension',file=txt)
-        print('-'*40,file=txt)
-        print('Start:\t%s' % (dekad_start.strftime('%Y-%m-%d')),file=txt)
-        print('End:\t%s' % (dekad_end.strftime('%Y-%m-%d')),file=txt)
-        print('='*40,file=txt)
+        print('Current EO data temporal coverage', file=txt)
+        print('-'*40, file=txt)
+        print('CHIRPS v2:\t%s to %s' % (prcp_v2_start.strftime('%Y-%m-%d'), prcp_v2_end.strftime('%Y-%m-%d')), file=txt)
+        print('CHIRPS v2p:\t%s to %s' % (prcp_v2p_start.strftime('%Y-%m-%d'), prcp_v2p_end.strftime('%Y-%m-%d')), file=txt)
+        print('CHIRPS v2e:\t%s to %s' % (prcp_start.strftime('%Y-%m-%d'), prcp_end.strftime('%Y-%m-%d')), file=txt)
+        print('ETo:\t\t%s to %s' % (etos_start.strftime('%Y-%m-%d'), etos_end.strftime('%Y-%m-%d')), file=txt)
+        print('Temp:\t\t%s to %s' % (tmax_start.strftime('%Y-%m-%d'), tmax_end.strftime('%Y-%m-%d')), file=txt)
+        print('NDVI:\t\t%s to %s' % (ndvi_start.strftime('%Y-%m-%d'), ndvi_end.strftime('%Y-%m-%d')), file=txt)
+        print('='*40, file=txt)
+        print('Data extension (filled by LTA)', file=txt)
+        print('-'*40, file=txt)
+        print('Start:\t%s' % (dekad_start.strftime('%Y-%m-%d')), file=txt)
+        print('End:\t%s' % (dekad_end.strftime('%Y-%m-%d')), file=txt)
+        print('='*40, file=txt)
     print('Exporting EO data is completed.')
+    with open('./data_in/eodata_coverage.txt', 'r') as f:
+        print(f.read())
     # ---------------------------------------- #
     
     return

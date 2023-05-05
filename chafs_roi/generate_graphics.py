@@ -30,7 +30,7 @@ def run_command(command):
 def generate_graphics():
     
     # Load FEWSNET admin boundaries
-    shape = gpd.read_file('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.json').drop(columns='id')
+    shape = gpd.read_file('/home/donghoonlee/chafs_roi/data/gscd_shape_stable.json').drop(columns='id')
     shape['ADMINX'] = shape['ADMIN2'].fillna(shape['ADMIN1'])
     shape.geometry = shape.geometry.simplify(0.01)
     geojson = json.loads(shape[['FNID','geometry']].to_json())

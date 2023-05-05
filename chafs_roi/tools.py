@@ -26,8 +26,7 @@ import matplotlib.colors as colors
 
 def Load_GSCD(cps):
     # Load crop area, production, yield data
-    df = pd.read_csv('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_data_stable.csv', index_col=0)
-    # df = pd.read_csv('/Users/dlee/gscd/public/gscd_data_stable.csv', index_col=0)
+    df = pd.read_csv('/home/donghoonlee/chafs_roi/data/gscd_data_stable.csv', index_col=0)
 
     # Reduce data
     container = []
@@ -40,16 +39,62 @@ def Load_GSCD(cps):
         container.append(sub)
     df = pd.concat(container, axis=0).reset_index(drop=True)
 
-    # Pivot table format
-    table = df.pivot_table(
+    # Pivot table format --------------------------------- #
+    area = df[df['indicator'] == 'area'].pivot_table(
         index='harvest_year',
-        columns=['fnid','country','name','product','season_name','harvest_month','indicator'],         
-        values='value'
+        columns=['fnid','country','name','product','season_name','growing_month','harvest_month'],         
+        values='value', aggfunc='sum'
     )
+    prod = df[df['indicator'] == 'production'].pivot_table(
+        index='harvest_year',
+        columns=['fnid','country','name','product','season_name','growing_month','harvest_month'],         
+        values='value', aggfunc='sum'
+    )
+    crop = df[df['indicator'] == 'yield'].pivot_table(
+        index='harvest_year',
+        columns=['fnid','country','name','product','season_name','growing_month','harvest_month'],         
+        values='value', aggfunc='sum'
+    )
+    # Extend columns
+    area_cols = area.columns.to_frame().reset_index(drop=True)
+    prod_cols = prod.columns.to_frame().reset_index(drop=True)
+    crop_cols = crop.columns.to_frame().reset_index(drop=True)
+    cols_extend = pd.concat([area_cols, prod_cols, crop_cols],axis=0).drop_duplicates().reset_index(drop=True)
+    cols_extend = pd.MultiIndex.from_frame(cols_extend)
+    area = area.reindex(columns = cols_extend)
+    prod = prod.reindex(columns = cols_extend)
+    crop = crop.reindex(columns = cols_extend)
+
+    # Recalculate crop yields
+    crop_recal = prod/area
+    crop_recal[crop.isna()] = np.nan
+
+    # Round off to the third decimal point
+    crop = crop.round(3)
+    crop_recal = crop_recal.round(3)
+
+    # Replace with the recalculated crop yields
+    number_replacement = sum(~np.isnan(crop.values[crop != crop_recal]))
+    crop[crop != crop_recal] = crop_recal[crop != crop_recal]
+
+    # Reform to pivot-table format
+    area = area.T
+    area['indicator'] = 'area'
+    area = area.set_index('indicator', append=True).T
+    prod = prod.T
+    prod['indicator'] = 'production'
+    prod = prod.set_index('indicator', append=True).T
+    crop = crop.T
+    crop['indicator'] = 'yield'
+    crop = crop.set_index('indicator', append=True).T
+    merged = pd.concat([area,prod,crop],axis=1)
+    table = merged.reindex(columns = merged.columns.sortlevel([0])[0])
+    # ---------------------------------------------------- #
+    df = table.T.stack().rename('value').reset_index()
 
     # Record years
     record = table.melt().pivot_table(
-        index=['fnid','country','name','product','season_name','harvest_month'],
+        index=['fnid','country','name','product','season_name','growing_month','harvest_month'],
         columns='indicator',values='value',aggfunc='count'
     )
     record = record.reset_index()
@@ -71,7 +116,7 @@ def Load_GSCD(cps):
     },inplace=True)
 
     # Load FEWSNET admin boundaries
-    shape = gpd.read_file('https://raw.githubusercontent.com/chc-ucsb/gscd/main/public/gscd_shape_stable.json').drop(columns='id')
+    shape = gpd.read_file('/home/donghoonlee/chafs_roi/data/gscd_shape_stable.json').drop(columns='id')
     # shape = gpd.read_file('/Users/dlee/gscd/public/gscd_shape_stable.json').drop(columns='id')
     shape = shape[shape['ADMIN0'].isin(info.country.unique())].reset_index(drop=True)
     

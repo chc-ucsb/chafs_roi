@@ -40,8 +40,8 @@ def ExtractAdmNDVI_emodis(year, fnid_dict):
     date = pd.to_datetime(date)
 
     # Remove existing files
-    filn_out_crop = '/home/dlee/chafs/data/eodata/ndvi_emodis/adm.ndvi.emodis.crop.{:04d}.{:02d}.{:02d}.hdf'
-    filn_out_all = '/home/dlee/chafs/data/eodata/ndvi_emodis/adm.ndvi.emodis.all.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_crop = '/home/donghoonlee/chafs/data/eodata/ndvi_emodis/adm.ndvi.emodis.crop.{:04d}.{:02d}.{:02d}.hdf'
+    filn_out_all = '/home/donghoonlee/chafs/data/eodata/ndvi_emodis/adm.ndvi.emodis.all.{:04d}.{:02d}.{:02d}.hdf'
     fn_out_crop = [filn_out_crop.format(dt.year, dt.month, dt.day) for dt in date]
     fn_out_all = [filn_out_all.format(dt.year, dt.month, dt.day) for dt in date]
     date_retain_crop = [not os.path.exists(filn) for filn in fn_out_crop]
@@ -54,13 +54,13 @@ def ExtractAdmNDVI_emodis(year, fnid_dict):
     if len(fn_out_crop) == 0: return
     
     # Load unique and reduced RasterIndex (rdx)
-    with open('/home/dlee/chafs/data/eodata/rdxu.adm.ndvi.emodis.pickle', 'rb') as f:
+    with open('/home/donghoonlee/chafs/data/eodata/rdxu.adm.ndvi.emodis.pickle', 'rb') as f:
         rdx_unique = cPickle.load(f)    
-    with open('/home/dlee/chafs/data/eodata/rdxr.adm.ndvi.emodis.pickle', 'rb') as f:
+    with open('/home/donghoonlee/chafs/data/eodata/rdxr.adm.ndvi.emodis.pickle', 'rb') as f:
         rdx_reduced = cPickle.load(f)
     
     # Resample cropland data
-    fn_cropland = '/home/dlee/chafs/data/cropland/Hybrid_10042015v9.img'
+    fn_cropland = '/home/donghoonlee/chafs/data/cropland/Hybrid_10042015v9.img'
     fn_sample = '/home/chc-sandbox/people/dlee/ndvi_emodis/ndvi.emodis.2002.071.tif'
     cropland = RasterResampling_tif(fn_cropland, fn_sample).flatten()
     # - Reducing rasters
@@ -124,8 +124,8 @@ def ExtractAdmNDVI_emodis(year, fnid_dict):
 
 def ndvi_emodis():
     # Load both admin1 and admin2 boundaries
-    adm1 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm1_glob.shp')
-    adm2 = gpd.read_file('/home/dlee/chafs/data/shapefile/adm2_glob.shp')
+    adm1 = gpd.read_file('/home/donghoonlee/chafs/data/shapefile/adm1_glob.shp')
+    adm2 = gpd.read_file('/home/donghoonlee/chafs/data/shapefile/adm2_glob.shp')
     adm = pd.concat([adm1, adm2], axis=0).reset_index(drop=True)
     # Select African countries
     world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
@@ -140,8 +140,8 @@ def ndvi_emodis():
     shape_adm1 = shape_adm[shape_adm.FNID.isin(adm1.FNID)]
     shape_adm2 = shape_adm[shape_adm.FNID.isin(adm2.FNID)]
 
-    fn_rdx_unique = '/home/dlee/chafs/data/eodata/rdxu.adm.ndvi.emodis.pickle'
-    fn_rdx_reduced = '/home/dlee/chafs/data/eodata/rdxr.adm.ndvi.emodis.pickle'
+    fn_rdx_unique = '/home/donghoonlee/chafs/data/eodata/rdxu.adm.ndvi.emodis.pickle'
+    fn_rdx_reduced = '/home/donghoonlee/chafs/data/eodata/rdxr.adm.ndvi.emodis.pickle'
     if False:
         fn_sample = '/home/chc-sandbox/people/dlee/ndvi_emodis/ndvi.emodis.2002.071.tif'
         # Rasterize administrative boudaries
@@ -186,7 +186,7 @@ def ndvi_emodis():
 
 
     # Remove and Re-extract recent data
-    files_rm = sorted(glob.glob('/home/dlee/chafs/data/eodata/ndvi_emodis/adm.ndvi.emodis.crop.????.*.hdf'))[-5:]
+    files_rm = sorted(glob.glob('/home/donghoonlee/chafs/data/eodata/ndvi_emodis/adm.ndvi.emodis.crop.????.*.hdf'))[-5:]
     if len(files_rm) > 0: 
         for file in files_rm: 
             os.remove(file)
