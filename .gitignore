@@ -3,6 +3,7 @@ data_in
 data_out
 result
 viewer
+test
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
